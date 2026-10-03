@@ -1,0 +1,86 @@
+<Window x:Class="Vortex.Views.VortexOrbWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Vortex Orb"
+        Height="106" Width="106"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        MouseDown="OnWindowMouseDown">
+
+    <Window.Resources>
+        <!-- Pulse Glow Animation -->
+        <Storyboard x:Key="BoostStoryboard">
+            <DoubleAnimation Storyboard.TargetName="GlowScale" Storyboard.TargetProperty="ScaleX"
+                             From="1.0" To="1.2" Duration="0:0:0.25" AutoReverse="True" />
+            <DoubleAnimation Storyboard.TargetName="GlowScale" Storyboard.TargetProperty="ScaleY"
+                             From="1.0" To="1.2" Duration="0:0:0.25" AutoReverse="True" />
+        </Storyboard>
+    </Window.Resources>
+
+    <Grid>
+        <!-- 40% Reduced Compact Mini-Orb (68px diameter) -->
+        <Border Width="68" Height="68" CornerRadius="34"
+                Background="#EE0D1527" BorderBrush="#1E293B" BorderThickness="1.5"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Cursor="Hand" MouseLeftButtonUp="OnOrbClicked"
+                ToolTip="Vortex Orb • Left-Click to Turbo Boost RAM • Right-Click for Menu">
+            <Border.Effect>
+                <DropShadowEffect Color="#6D4AFF" BlurRadius="16" ShadowDepth="0" Opacity="0.8" />
+            </Border.Effect>
+
+            <Grid>
+                <!-- Vortex Logo Watermark Core -->
+                <Image Source="/vortex.png" Width="52" Height="52" Opacity="0.45" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center" 
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+
+                <!-- Glowing Progress Ring -->
+                <Ellipse x:Name="GlowRing" Width="60" Height="60" Stroke="#6D4AFF" StrokeThickness="3"
+                         RenderTransformOrigin="0.5,0.5">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="GlowScale" ScaleX="1.0" ScaleY="1.0" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+
+                <!-- Center Content: RAM Load -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0">
+                    <TextBlock x:Name="TxtRamPercent" Text="64%"
+                               Foreground="#00E599" FontWeight="Bold" FontSize="13"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="RAM"
+                               Foreground="#A69EB0" FontWeight="SemiBold" FontSize="8"
+                               HorizontalAlignment="Center" Margin="0,-1,0,0" />
+                    <TextBlock Text="BOOST"
+                               Foreground="#6D4AFF" FontWeight="Bold" FontSize="6.5"
+                               HorizontalAlignment="Center" Margin="0,1,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Compact Toast Bubble after Boost -->
+        <Border x:Name="ToastBubble" Width="98" Height="22" CornerRadius="11"
+                Background="#10B981" BorderBrush="#059669" BorderThickness="1"
+                VerticalAlignment="Top" HorizontalAlignment="Center"
+                Opacity="0" IsHitTestVisible="False">
+            <TextBlock x:Name="TxtToast" Text="Cleaned 1.8 GB!"
+                       Foreground="#FFFFFF" FontSize="9" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+
+        <!-- Right-Click Fluent Dark Context Menu (No white gutter!) -->
+        <Grid.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="⚡ Turbo Boost RAM Now" Click="OnMenuTurboBoost" />
+                <MenuItem Header="🎯 Toggle Gaming / Focus Mode" Click="OnMenuToggleFocus" />
+                <Separator />
+                <MenuItem Header="🖥️ Open Main Dashboard" Click="OnMenuOpenMain" />
+                <MenuItem Header="📌 Toggle Always on Top" Click="OnMenuToggleTopmost" />
+                <MenuItem Header="✖ Close Widget" Click="OnMenuCloseWidget" />
+            </ContextMenu>
+        </Grid.ContextMenu>
+    </Grid>
+</Window>

@@ -1,0 +1,303 @@
+<Window x:Class="Vortex.Views.BlockedAppsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Vortex - Application Rules &amp; Access Manager"
+        Width="960" Height="640"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Styles/DeepSpaceTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Margin="14"
+            CornerRadius="16"
+            Background="{DynamicResource SurfaceDarkBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="32" Color="#000000" Opacity="0.75" ShadowDepth="8" />
+        </Border.Effect>
+
+        <Grid>
+            <!-- Atmospheric Gradient Glow -->
+            <Border Height="90" VerticalAlignment="Top" CornerRadius="16,16,0,0" Opacity="0.4"
+                    Background="{DynamicResource AtmosphericGradient}" IsHitTestVisible="False" />
+
+            <DockPanel Margin="22,18,22,20">
+                <!-- Header / Titlebar -->
+                <DockPanel DockPanel.Dock="Top" MouseLeftButtonDown="OnTitleBarMouseDown" Background="Transparent" Margin="0,0,0,16">
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source="/vortex.png" Width="34" Height="34" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <StackPanel>
+                            <TextBlock Text="🛡️ Application Rules &amp; Access Manager" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Choose which applications to allow or disallow network access, and manage intrusion alert preferences." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource WindowCaptionButton}" Content="✕" Width="28" Height="28" Click="OnCloseClick" HorizontalAlignment="Right" />
+                </DockPanel>
+
+                <!-- Navigation Segmented Tab Bar -->
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <RadioButton x:Name="TabDiscover" Style="{StaticResource SidebarRadioButton}" Content="📱 Choose From PC Apps" IsChecked="True" Checked="OnTabChanged" Margin="0,0,8,0" Height="34" Width="210" />
+                        <RadioButton x:Name="TabAllowed" Style="{StaticResource SidebarRadioButton}" Content="🛡️ Allowed Apps (0)" Checked="OnTabChanged" Margin="0,0,8,0" Height="34" Width="180" />
+                        <RadioButton x:Name="TabBlocked" Style="{StaticResource SidebarRadioButton}" Content="🚫 Blocked Apps (0)" Checked="OnTabChanged" Margin="0,0,8,0" Height="34" Width="180" />
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Bottom Summary Row -->
+                <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+                    <TextBlock x:Name="TxtStatus" Text="Ready." Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" />
+                    <Button Style="{StaticResource VortexSecondaryButton}" Content="Close" Width="100" HorizontalAlignment="Right" Click="OnCloseClick" />
+                </DockPanel>
+
+                <!-- ==================== TAB 1: DISCOVER & CHOOSE PC APPS ==================== -->
+                <Grid x:Name="PanelDiscover" Visibility="Visible">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Filter & Action Bar -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                        <Grid DockPanel.Dock="Left" Width="340">
+                            <TextBox x:Name="TxtDiscoverFilter" Style="{StaticResource FluentSearchBox}"
+                                     Padding="10,6,28,6" Height="32"
+                                     TextChanged="OnDiscoverFilterChanged"
+                                     ToolTip="Search apps by name, executable, category, or path" />
+                            <TextBlock x:Name="TxtDiscoverFilterPlaceholder" Text="Search all PC apps (e.g. Antigravity, Discord, Code)..."
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"
+                                       IsHitTestVisible="False" FontSize="11" />
+                            <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                        </Grid>
+
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Rescan PC" Click="OnRescanClick" Margin="0,0,8,0" Height="32" ToolTip="Rescan running processes and installed programs" />
+                            <Button Style="{StaticResource VortexPrimaryButton}" Content="📂 Browse .exe File..." Click="OnBrowseAddCustomClick" Height="32" ToolTip="Select any custom executable file on your computer" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Apps Table -->
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvDiscoveredApps" SelectionMode="Single">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Application &amp; Process" Width="230">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" ToolTip="{Binding ExecutablePath}">
+                                                    <TextBlock Text="{Binding IconGlyph}" FontSize="15" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding ProcessName}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Category &amp; Activity" Width="170">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Category}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                                    <TextBlock Text="{Binding RunningBadge}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Access Rule Status" Width="160">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#18FFFFFF" BorderThickness="1">
+                                                    <TextBlock Text="{Binding StatusDisplay}" FontSize="11" FontWeight="SemiBold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding AccessStatus}" Value="ALLOWED">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource StatusSafeBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding AccessStatus}" Value="BLOCKED_FIREWALL">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding AccessStatus}" Value="BLOCKED_EXECUTION">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Alerts" Width="95">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource VortexSecondaryButton}" Click="OnToggleNotificationDiscoverRowClick" Padding="6,2" FontSize="10" ToolTip="Click to toggle intrusion toast alerts for this app">
+                                                    <TextBlock Text="{Binding NotificationDisplay}" Foreground="{DynamicResource AccentGlowBrush}" />
+                                                </Button>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Quick Actions" Width="230">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <!-- Allow Button -->
+                                                    <Button Style="{StaticResource VortexPrimaryButton}" Content="🛡️ Allow" Click="OnAllowDiscoverRowClick" Padding="8,3" FontSize="10" Margin="0,0,4,0" ToolTip="Trust this app and allow network access without intrusion alerts" />
+                                                    
+                                                    <!-- Block Button -->
+                                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="🚫 Block" Click="OnBlockDiscoverRowClick" Padding="8,3" FontSize="10" Margin="0,0,4,0" Foreground="{DynamicResource StatusWarningBrush}" ToolTip="Quarantine this app from network access via Windows Firewall" />
+                                                    
+                                                    <!-- Reset / Unconfigure Button -->
+                                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="✕ Reset" Click="OnResetDiscoverRowClick" Padding="6,3" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" ToolTip="Reset to default monitoring" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+                <!-- ==================== TAB 2: MY ALLOWED APPS ==================== -->
+                <Grid x:Name="PanelAllowed" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                        <Grid DockPanel.Dock="Left" Width="280">
+                            <TextBox x:Name="TxtAllowedFilter" Style="{StaticResource FluentSearchBox}"
+                                     Padding="10,6,28,6" Height="32"
+                                     TextChanged="OnAllowedFilterChanged" />
+                            <TextBlock x:Name="TxtAllowedFilterPlaceholder" Text="Filter allowed apps..."
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"
+                                       IsHitTestVisible="False" FontSize="11" />
+                        </Grid>
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvAllowedApps" SelectionMode="Single">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Application" Width="200">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="🛡️" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                                        <TextBlock Text="{Binding ProcessName}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Category" Width="140" DisplayMemberBinding="{Binding Category}" />
+                                    <GridViewColumn Header="Executable Location" Width="280">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding ExecutablePath}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ExecutablePath}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Alerts" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource VortexSecondaryButton}" Click="OnToggleNotificationAllowedRowClick" Padding="6,2" FontSize="10">
+                                                    <TextBlock Text="{Binding NotificationDisplay}" Foreground="{DynamicResource AccentGlowBrush}" />
+                                                </Button>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Action" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource VortexSecondaryButton}" Content="🗑️ Revoke" Click="OnRemoveAllowedRowClick" Padding="6,2" FontSize="11" Foreground="{DynamicResource StatusDangerBrush}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+                <!-- ==================== TAB 3: BLOCKED APPS ==================== -->
+                <Grid x:Name="PanelBlocked" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                        <Grid DockPanel.Dock="Left" Width="280">
+                            <TextBox x:Name="TxtBlockedFilter" Style="{StaticResource FluentSearchBox}"
+                                     Padding="10,6,28,6" Height="32"
+                                     TextChanged="OnBlockedFilterChanged" />
+                            <TextBlock x:Name="TxtBlockedFilterPlaceholder" Text="Filter blocked apps..."
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"
+                                       IsHitTestVisible="False" FontSize="11" />
+                        </Grid>
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvBlockedItems" SelectionMode="Single">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Application" Width="180" DisplayMemberBinding="{Binding ProcessName}" />
+                                    <GridViewColumn Header="Block Type" Width="180">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#207C3AED" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1">
+                                                    <TextBlock Text="{Binding BlockTypeDisplay}" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" FontWeight="SemiBold" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Executable Path" Width="300">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding ExecutablePath}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ExecutablePath}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Action" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource VortexSecondaryButton}" Content="🔓 Unblock" Click="OnUnblockRowClick" Padding="8,3" FontSize="11" Foreground="{DynamicResource StatusSafeBrush}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+            </DockPanel>
+        </Grid>
+    </Border>
+</Window>

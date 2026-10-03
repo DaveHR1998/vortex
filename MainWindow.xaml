@@ -1,0 +1,2108 @@
+<Window x:Class="Vortex.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Vortex - System Guardian"
+        Height="800" Width="1280"
+        MinHeight="680" MinWidth="1080"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource CanvasBgBrush}"
+        WindowStyle="None"
+        AllowsTransparency="False">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="42" ResizeBorderThickness="6" GlassFrameThickness="-1" CornerRadius="8" />
+    </WindowChrome.WindowChrome>
+
+    <!-- Proton Ambient Gradient Background Canvas -->
+    <Grid Background="{DynamicResource AtmosphericGradient}">
+        <Grid.RowDefinitions>
+            <!-- Integrated Title Bar -->
+            <RowDefinition Height="50" />
+            <!-- Main Content Area -->
+            <RowDefinition Height="*" />
+            <!-- Slim Bottom Status Bar -->
+            <RowDefinition Height="30" />
+        </Grid.RowDefinitions>
+
+        <!-- 1. Integrated Title Bar -->
+        <Border Grid.Row="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0,10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- App Brand & Title (Proton Style with Large Vortex Logo) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="/vortex.png" Width="38" Height="38" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Text="Vortex" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock Text="/" Foreground="{DynamicResource TextMutedBrush}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock x:Name="TxtBreadcrumb" Text="Overview &amp; Health" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Hardware Telemetry Header Pills -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- RAM Pill -->
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="12,3" Margin="5,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🧠 RAM: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                            <TextBlock x:Name="TxtHeaderRam" Text="76% (12.2 GB)" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" FontSize="11" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- CPU Pill -->
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="12,3" Margin="5,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚡ CPU: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                            <TextBlock x:Name="TxtHeaderCpu" Text="12%" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" FontSize="11" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- C: Drive Pill -->
+                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="12,3" Margin="5,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="💽 C: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                            <TextBlock x:Name="TxtHeaderDisk" Text="64% Used" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" FontSize="11" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Quick Actions in Header -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource VortexPrimaryButton}" Content="⚡ Turbo Boost" Click="OnTurboBoostClick" Margin="0,0,8,0" Padding="12,5" />
+                    <Button Style="{StaticResource VortexSecondaryButton}" x:Name="BtnToggleOrb" Content="🔮 Desktop Orb" Click="OnToggleOrbClick" Margin="0,0,8,0" Padding="10,5" />
+                    <Button Style="{StaticResource VortexSecondaryButton}" x:Name="BtnToggleTheme" Content="🌓 Theme" Click="OnToggleThemeClick" ToolTip="Switch between Dark and Light mode" Padding="10,5" />
+                </StackPanel>
+
+                <!-- Window Control Buttons (Min, Max, Close) with Custom Dark Fluent Hover -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource WindowCaptionButton}" Content="—" Click="OnMinimizeClick" ToolTip="Minimize" />
+                    <Button Style="{StaticResource WindowCaptionButton}" Content="▢" Click="OnMaximizeClick" ToolTip="Maximize" />
+                    <Button Style="{StaticResource WindowCloseCaptionButton}" Content="✕" Click="OnCloseClick" ToolTip="Close" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Main Body: Proton Frosted Sidebar + Content Area -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <!-- Frosted Sidebar Navigation -->
+                <ColumnDefinition Width="240" />
+                <!-- Dynamic Content Area -->
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Frosted Sidebar (Proton Style) -->
+            <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <!-- Search Box at Top of Sidebar -->
+                    <Border DockPanel.Dock="Top" Margin="12,12,12,8">
+                        <Grid>
+                            <TextBox x:Name="TxtSearchBox" Style="{StaticResource FluentSearchBox}"
+                                     Padding="10,6,28,6"
+                                     TextChanged="OnSearchTextChanged" />
+                            <TextBlock x:Name="TxtSearchBoxPlaceholder" Text="Search processes..."
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"
+                                       IsHitTestVisible="False" FontSize="11" />
+                            <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}" 
+                                       HorizontalAlignment="Right" VerticalAlignment="Center" 
+                                       Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Bottom Controls: Focus & History -->
+                    <StackPanel DockPanel.Dock="Bottom" Margin="8,8,8,12">
+                        <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="6,0,6,8" />
+                        <RadioButton x:Name="NavFocus" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🎯" FontSize="14" Margin="0,0,10,0" />
+                                <TextBlock Text="Gaming / Focus Mode" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="NavHistory" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📋" FontSize="14" Margin="0,0,10,0" />
+                                <TextBlock Text="Audit History &amp; Logs" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+
+                    <!-- Navigation Items List (GroupName="MainNav") -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="8,4,8,8">
+                            <TextBlock Text="SYSTEM TUNE-UP" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="12,6,0,6" />
+
+                            <RadioButton x:Name="NavHome" GroupName="MainNav" Style="{StaticResource FluentNavItem}" IsChecked="True" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🏠" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Overview &amp; Health" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavProcesses" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚡" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Process Intelligence" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavStorage" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📁" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Folder Ownership" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavJunk" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🧹" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="System Sweeper" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavRegistry" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🛡️" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Registry Guard" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <TextBlock Text="DIAGNOSTICS" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="12,14,0,6" />
+
+                            <RadioButton x:Name="NavNetwork" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🌐" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Network Monitor" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavServices" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚙️" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Services Controller" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <TextBlock Text="PRIVACY" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="12,14,0,6" />
+
+                            <RadioButton x:Name="NavPrivacy" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🕵️" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Privacy Eraser" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavIdentity" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔐" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Identity Shield" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavVault" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🛡️" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Data Shield &amp; Vault" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <TextBlock Text="TOOLS" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="12,14,0,6" />
+
+                            <RadioButton x:Name="NavUpdater" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔄" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="Software Updater" />
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="NavSysInfo" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🖥️" FontSize="14" Margin="0,0,10,0" />
+                                    <TextBlock Text="System Info" />
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Dynamic Content Area -->
+            <Grid Grid.Column="1" Margin="22,18,22,18">
+
+                <!-- TAB 0: Hero Overview Dashboard -->
+                <Grid x:Name="PanelHome" Visibility="Visible">
+                    <Grid.RowDefinitions>
+                        <!-- Hero Banner -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Feature Cards Grid -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Quick Stats Overview -->
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Proton Style Hero Banner -->
+                    <Border Grid.Row="0" CornerRadius="12" Padding="28,24" Margin="0,0,0,18"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <DockPanel Grid.Column="0" VerticalAlignment="Center">
+                                <Image DockPanel.Dock="Left" Source="/vortex.png" Width="120" Height="120" Margin="0,0,24,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality">
+                                    <Image.Effect>
+                                        <DropShadowEffect Color="#6D4AFF" BlurRadius="28" ShadowDepth="0" Opacity="0.6" />
+                                    </Image.Effect>
+                                </Image>
+                                <StackPanel VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Border Background="{DynamicResource AccentGlowBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                            <TextBlock Text="⚡ FAST OPTIMIZATION" Foreground="#000000" FontWeight="Bold" FontSize="10" />
+                                        </Border>
+                                        <TextBlock Text="Windows System Guardian" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Text="Vortex Fluent Optimizer" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="26" FontWeight="Bold" Margin="0,0,0,8" />
+                                    <TextBlock Text="Intelligent process diagnostics, application storage provenance, and safe background cleanup." 
+                                               Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" MaxWidth="520" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <Button Style="{StaticResource VortexPrimaryButton}" Content="⚡ Instant Turbo Boost" Click="OnTurboBoostClick" FontSize="13" Padding="22,10" Margin="0,0,0,8" />
+                                <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Deep Scan System" Click="OnScanJunkClick" HorizontalAlignment="Stretch" Padding="14,8" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Fast Action Cards Grid -->
+                    <Grid Grid.Row="1" Margin="0,0,0,18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Card 1: Memory & Processes -->
+                        <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,10,0" Cursor="Hand" MouseLeftButtonUp="OnCardProcessesClick">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource AccentPrimaryBrush}" Margin="0,0,12,0">
+                                        <TextBlock Text="⚡" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Process Intelligence" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" />
+                                        <TextBlock Text="Categorize active apps" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock Text="Identify bloatware, dev daemons, and trim RAM working sets safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Folder Provenance -->
+                        <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="5,0,5,0" Cursor="Hand" MouseLeftButtonUp="OnCardStorageClick">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Border Width="34" Height="34" CornerRadius="8" Background="#0284C7" Margin="0,0,12,0">
+                                        <TextBlock Text="📁" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Folder Ownership" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" />
+                                        <TextBlock Text="Who owns every GB?" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock Text="Correlate mystery AppData folders to their installed apps and publishers." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: Safe Sweeper -->
+                        <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="10,0,0,0" Cursor="Hand" MouseLeftButtonUp="OnCardJunkClick">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource StatusSafeBrush}" Margin="0,0,12,0">
+                                        <TextBlock Text="🧹" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="System Sweeper" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" />
+                                        <TextBlock Text="Restore point protected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock Text="Clean Windows temp, Chrome &amp; Edge caches, and prefetch safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Quick Telemetry & Health Panel -->
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                <TextBlock Text="SYSTEM RESOURCE HEALTH" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />
+                                
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="Physical Memory Load:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+                                    <TextBlock x:Name="TxtOverviewRamLoad" Text="76% In Use" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="12" />
+                                </Grid>
+                                <ProgressBar x:Name="PbOverviewRam" Value="76" Maximum="100" Height="6" Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,16" />
+
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="Processor Activity (CPU):" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+                                    <TextBlock x:Name="TxtOverviewCpuLoad" Text="12%" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="12" />
+                                </Grid>
+                                <ProgressBar x:Name="PbOverviewCpu" Value="12" Maximum="100" Height="6" Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource StatusSafeBrush}" Margin="0,0,0,16" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                                <TextBlock Text="ACTIVE SAFETY PROTOCOLS" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />
+                                <TextBlock Text="🛡️ Windows Core System32 Whitelist: ACTIVE" Foreground="{DynamicResource StatusSafeBrush}" FontSize="12" Margin="0,4" />
+                                <TextBlock Text="💾 Automatic Pre-Clean System Restore Point: READY" Foreground="{DynamicResource StatusSafeBrush}" FontSize="12" Margin="0,4" />
+                                <TextBlock Text="📁 Pre-Clean .REG Registry Backup Exporter: READY" Foreground="{DynamicResource StatusSafeBrush}" FontSize="12" Margin="0,4" />
+                                <TextBlock Text="🗄️ Local SQLite Engine: Connected (%LocalAppData%\Vortex)" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="12" Margin="0,4" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 1: Process & Memory Optimizer -->
+                <Grid x:Name="PanelProcesses" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Top Title & Global Actions -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Active Processes" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Inspect publishers, memory impact, and terminate background tasks." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Grid Width="200" Margin="0,0,8,0">
+                                <TextBox x:Name="TxtProcessFilter" Style="{StaticResource FluentSearchBox}"
+                                         Padding="10,6,28,6" Height="32"
+                                         TextChanged="OnProcessFilterInputChanged"
+                                         ToolTip="Search processes by name, PID, or publisher" />
+                                <TextBlock x:Name="TxtProcessFilterPlaceholder" Text="Search processes..."
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           VerticalAlignment="Center" Margin="10,0,0,0"
+                                           IsHitTestVisible="False" FontSize="11" />
+                                <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                           Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                            </Grid>
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Refresh List" Click="OnRefreshProcessesClick" Height="32" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource VortexPrimaryButton}" Content="⚡ Turbo Boost All" Click="OnTurboBoostClick" Height="32" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Safety Diagnostic Filters & Batch Selection Bar -->
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,0,10">
+                        <DockPanel>
+                            <!-- Filter Chips Group -->
+                            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="FILTER:" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <RadioButton x:Name="RbFilterAll" Style="{StaticResource VortexFilterChip}" GroupName="ProcessSafetyFilterGroup" Content="🔘 All" IsChecked="True" Click="OnProcessFilterChanged" />
+                                <RadioButton x:Name="RbFilterSafe" Style="{StaticResource VortexFilterChip}" GroupName="ProcessSafetyFilterGroup" Content="🟢 Safe to End" Click="OnProcessFilterChanged" />
+                                <RadioButton x:Name="RbFilterDev" Style="{StaticResource VortexFilterChip}" GroupName="ProcessSafetyFilterGroup" Content="🟠 Dev Daemons" Click="OnProcessFilterChanged" />
+                                <RadioButton x:Name="RbFilterUser" Style="{StaticResource VortexFilterChip}" GroupName="ProcessSafetyFilterGroup" Content="🔵 User Apps" Click="OnProcessFilterChanged" />
+                                <RadioButton x:Name="RbFilterCrit" Style="{StaticResource VortexFilterChip}" GroupName="ProcessSafetyFilterGroup" Content="🔴 System Critical" Click="OnProcessFilterChanged" />
+                            </StackPanel>
+
+                            <!-- Quick Select Actions -->
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button x:Name="BtnSelectAllSafe" Style="{StaticResource VortexSecondaryButton}" Content="☑️ Select All Safe" Click="OnSelectAllSafeClick" Margin="0,0,6,0" Padding="8,4" FontSize="11" />
+                                <Button x:Name="BtnClearSelection" Style="{StaticResource VortexSecondaryButton}" Content="Clear Selection" Click="OnClearSelectionClick" Padding="8,4" FontSize="11" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Process DataGrid -->
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvProcesses" SelectionChanged="OnProcessSelectionChanged">
+                            <ListView.View>
+                                <GridView>
+                                    <!-- Multi-Select CheckBox Column -->
+                                    <GridViewColumn Width="46">
+                                        <GridViewColumnHeader>
+                                            <CheckBox x:Name="ChkHeaderSelectAll" Click="OnHeaderSelectAllClick" ToolTip="Select/Deselect visible processes" HorizontalAlignment="Center" />
+                                        </GridViewColumnHeader>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="OnProcessRowCheckboxClick" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <!-- Process Name & Exe -->
+                                    <GridViewColumn Header="Name &amp; Executable" Width="190">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <TextBlock Text="{Binding Name}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <!-- Safety Diagnostics Badge -->
+                                    <GridViewColumn Header="Safety Diagnosis" Width="135">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{Binding BadgeColor}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                                    <TextBlock Text="{Binding BadgeText}" Foreground="#FFFFFF" FontWeight="Bold" FontSize="10" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Publisher" Width="150" DisplayMemberBinding="{Binding Publisher}" />
+                                    <GridViewColumn Header="Memory" Width="85" DisplayMemberBinding="{Binding MemoryString}" />
+                                    <GridViewColumn Header="Sockets" Width="60" DisplayMemberBinding="{Binding ActiveSockets}" />
+                                    <GridViewColumn Header="Plain-English Verdict &amp; Advice" Width="360" DisplayMemberBinding="{Binding Description}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+
+                    <!-- Selected Process Action Drawer -->
+                    <Border Grid.Row="3" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Margin="0,10,0,0" Padding="14">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left">
+                                <TextBlock x:Name="TxtSelectedProcName" Text="Select one or more processes above to inspect recommendations" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock x:Name="TxtSelectedProcRec" Text="Vortex heuristics will display whether it is safe to terminate." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button x:Name="BtnTrimProcess" Style="{StaticResource VortexSecondaryButton}" Content="⚡ Trim Working Set" Click="OnTrimSelectedProcessClick" Margin="0,0,8,0" IsEnabled="False" />
+                                <Button x:Name="BtnEndProcess" Style="{StaticResource VortexDangerButton}" Content="🛑 End Process" Click="OnEndSelectedProcessClick" IsEnabled="False" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 2: Storage & Folder Ownership Explorer -->
+                <!-- TAB 2: Storage & Folder Ownership Explorer -->
+                <Grid x:Name="PanelStorage" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Title row -->
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="Folder Ownership &amp; Storage" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Inspect folder contents and safely clean leftover caches." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <!-- Button row — below the title so they never overlap -->
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="📂 Scan LocalAppData" Click="OnScanLocalAppDataClick" Height="34" Padding="14,0" Margin="0,0,8,0" ToolTip="Scan current user's %LocalAppData% directory" />
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Deep Scan All Caches" Click="OnScanAllCachesClick" Height="34" Padding="14,0" Margin="0,0,8,0" ToolTip="Scan roaming and application cache directories" />
+                            <Button x:Name="BtnCleanVerdict" Style="{StaticResource VortexDangerButton}" Content="🧹 Clean Filtered Leftovers" Click="OnCleanVerdictFilteredClick" Height="34" Padding="16,0" FontWeight="SemiBold" ToolTip="Clean safe folders matching the active verdict filter" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Verdict Filter Bar -->
+                    <Border Grid.Row="1" Margin="0,0,0,10">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Filter Verdict:" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="11" FontWeight="SemiBold" />
+                                <RadioButton x:Name="RbFilterFolderAll" GroupName="FolderVerdictFilterGroup" Content="All Folders" Style="{StaticResource VortexFilterChip}" IsChecked="True" Click="OnFolderFilterChanged" />
+                                <RadioButton x:Name="RbFilterFolderOrphaned" GroupName="FolderVerdictFilterGroup" Content="🟣 Orphaned (Safe)" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
+                                <RadioButton x:Name="RbFilterFolderSafeDelete" GroupName="FolderVerdictFilterGroup" Content="🟢 Safe to Delete" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
+                                <RadioButton x:Name="RbFilterFolderCache" GroupName="FolderVerdictFilterGroup" Content="🔵 Safe Caches" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
+                                <RadioButton x:Name="RbFilterFolderRunning" GroupName="FolderVerdictFilterGroup" Content="🔴 App Running" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Grid Width="170" Margin="0,0,10,0">
+                                    <TextBox x:Name="TxtFolderSearch" Style="{StaticResource FluentSearchBox}"
+                                             Padding="10,4,26,4" Height="28"
+                                             TextChanged="OnFolderSearchChanged"
+                                             ToolTip="Search folders by name or path" />
+                                    <TextBlock x:Name="TxtFolderSearchPlaceholder" Text="Search folders..."
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               VerticalAlignment="Center" Margin="10,0,0,0"
+                                               IsHitTestVisible="False" FontSize="11" />
+                                    <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               Margin="0,0,8,0" IsHitTestVisible="False" FontSize="10" />
+                                </Grid>
+                                <TextBlock x:Name="TxtFolderStats" Text="0 folders" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" FontSize="11" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Folder Cards Grid -->
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvFolders" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="📂 Open in Windows Explorer" Click="OnOpenFolderInExplorerClick" />
+                                    <MenuItem Header="🧹 Safely Delete Folder" Click="OnDeleteFolderClick" />
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Folder / Directory" Width="160">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding FolderName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Path}" FontSize="9" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxWidth="150" ToolTip="{Binding Path}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Size" Width="75" DisplayMemberBinding="{Binding SizeString}" />
+                                    <GridViewColumn Header="Belongs To" Width="140">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding OwningApplication}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Publisher}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Category" Width="110" DisplayMemberBinding="{Binding Category}" />
+                                    
+                                    <GridViewColumn Header="Safety Verdict" Width="135">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{Binding SafetyBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                    <TextBlock Text="{Binding SafetyBadgeText}" Foreground="#FFFFFF" FontWeight="Bold" FontSize="10" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Purpose &amp; Action Recommendation" Width="360">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Recommendation}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" TextWrapping="Wrap" ToolTip="{Binding Recommendation}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 3: System & Junk Sweeper -->
+                <Grid x:Name="PanelJunk" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,14">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="System Sweeper" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Clean temporary caches, logs, crash dumps, and leftover files." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Rescan Junk" Click="OnScanJunkClick" Height="34" Padding="14,0" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource VortexPrimaryButton}" Content="🧹 Clean Selected Categories" Click="OnCleanJunkClick" Height="34" Padding="16,0" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Junk Categories List -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Scan Progress Bar -->
+                        <ProgressBar x:Name="PbJunkScan" Grid.Row="0" IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="Collapsed" />
+
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="6">
+                            <ListView x:Name="LvJunkCategories"
+                                      BorderThickness="0"
+                                      Background="Transparent"
+                                      HorizontalContentAlignment="Stretch"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="Margin" Value="0,3" />
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListViewItem">
+                                                    <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Margin="2" Padding="14,12">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,14,0" />
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding CategoryName}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" TextWrapping="Wrap" />
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="14,0,0,0">
+                                                    <TextBlock Text="{Binding SizeString}" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource AccentGlowBrush}" HorizontalAlignment="Right" />
+                                                    <TextBlock Text="{Binding FileCount, StringFormat='{}{0:N0} files'}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Border>
+                    </Grid>
+
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Margin="0,12,0,0" Padding="14">
+                        <DockPanel>
+                            <CheckBox x:Name="ChkCreateRestorePoint" IsChecked="True" Content="Automatically create Windows System Restore point before cleaning" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtJunkStatus" Text="Ready to scan and reclaim storage." Foreground="{DynamicResource AccentGlowBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" />
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 4: Registry Guard -->
+                <Grid x:Name="PanelRegistry" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,14">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Registry Guard" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Scan and clean invalid registry entries with automatic backups." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Scan Registry" Click="OnScanRegistryClick" Height="34" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource VortexDangerButton}" Content="🛡️ Safe Clean Selected" Click="OnCleanRegistryClick" Height="34" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Scan Progress Bar -->
+                        <ProgressBar x:Name="PbRegistryScan" Grid.Row="0" IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="Collapsed" />
+
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                            <ListView x:Name="LvRegistry" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="40">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsSelected}" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Issue Type" Width="170" DisplayMemberBinding="{Binding IssueType}" />
+                                        <GridViewColumn Header="Details" Width="380" DisplayMemberBinding="{Binding Details}" />
+                                        <GridViewColumn Header="Target Registry Key" Width="430" DisplayMemberBinding="{Binding KeyPath}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Border>
+                    </Grid>
+
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Margin="0,12,0,0" Padding="14">
+                        <DockPanel>
+                            <TextBlock Text="🛡️ All cleaned keys are automatically exported to .reg backup files in %LocalAppData%\Vortex\Backups before modification." Foreground="{DynamicResource StatusSafeBrush}" FontSize="12" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtRegistryStatus" Text="Ready to scan Windows Registry." Foreground="{DynamicResource AccentGlowBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" />
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 5: Network Traffic Monitor & Intrusion Shield -->
+                <Grid x:Name="PanelNetwork" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header & Control Bar -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Network &amp; Threat Shield" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Live socket telemetry, bandwidth, connection security, and application permissions." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Speedometer & Status Telemetry Cards -->
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Card 1: Download Speed -->
+                        <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="⬇️ DOWNLOAD SPEED" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </DockPanel>
+                                <TextBlock x:Name="TxtNetDownloadSpeed" Text="0 KB/s" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource StatusSafeBrush}" />
+                                <TextBlock x:Name="TxtNetTotalRecv" Text="Total: 0 MB" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Upload Speed -->
+                        <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="⬆️ UPLOAD SPEED" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </DockPanel>
+                                <TextBlock x:Name="TxtNetUploadSpeed" Text="0 KB/s" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                <TextBlock x:Name="TxtNetTotalSent" Text="Total: 0 MB" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: VPN & Tunnel Status -->
+                        <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="🛡️ VPN &amp; INTERFACE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </DockPanel>
+                                <TextBlock x:Name="TxtNetVpnStatus" Text="🌐 Direct (Wi-Fi/Eth)" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="TxtNetInterfaceName" Text="Default Adapter" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Threat Defense Shield -->
+                        <Border Grid.Column="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="🚨 INTRUSION SHIELD" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </DockPanel>
+                                <TextBlock x:Name="TxtNetThreatStatus" Text="✅ 0 Threats" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource StatusSafeBrush}" />
+                                <TextBlock x:Name="TxtNetActiveSockets" Text="Sockets: 0" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Network Shield Segmented Sub-Tab Bar -->
+                    <DockPanel Grid.Row="2" Margin="0,0,0,10">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <RadioButton x:Name="SubTabNetSockets" Style="{StaticResource SidebarRadioButton}" Content="🌐 Live Sockets &amp; Traffic" IsChecked="True" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="190" />
+                            <RadioButton x:Name="SubTabNetDiscover" Style="{StaticResource SidebarRadioButton}" Content="📱 Choose &amp; Manage PC Apps" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="215" />
+                            <RadioButton x:Name="SubTabNetAllowed" Style="{StaticResource SidebarRadioButton}" Content="🛡️ Allowed Apps (0)" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="160" />
+                            <RadioButton x:Name="SubTabNetBlocked" Style="{StaticResource SidebarRadioButton}" Content="🚫 Blocked Apps (0)" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="160" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Dynamic Sub-Views Container -->
+                    <Grid Grid.Row="3">
+                        <!-- VIEW A: Live Sockets Table -->
+                        <Grid x:Name="ViewNetSockets" Visibility="Visible">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                <Grid DockPanel.Dock="Left" Width="280">
+                                    <TextBox x:Name="TxtNetFilter" Style="{StaticResource FluentSearchBox}"
+                                             Padding="10,6,28,6" Height="32"
+                                             TextChanged="OnNetFilterChanged"
+                                             ToolTip="Filter by process name, PID, IP, port, or protocol" />
+                                    <TextBlock x:Name="TxtNetFilterPlaceholder" Text="Filter sockets, IP, process..."
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               VerticalAlignment="Center" Margin="10,0,0,0"
+                                               IsHitTestVisible="False" FontSize="11" />
+                                    <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                                </Grid>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button x:Name="BtnNetAutoRefresh" Style="{StaticResource VortexSecondaryButton}" Content="▶️ Auto-Refresh (2s)" Click="OnToggleNetAutoRefreshClick" Margin="0,0,8,0" Height="32" />
+                                    <Button Style="{StaticResource VortexPrimaryButton}" Content="🔄 Refresh Now" Click="OnRefreshNetworkClick" Height="32" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                                <ListView x:Name="LvNetwork" SelectionMode="Single">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <EventSetter Event="PreviewMouseRightButtonDown" Handler="OnListViewItemPreviewMouseRightButtonDown" />
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ContextMenu>
+                                        <ContextMenu Background="{DynamicResource SurfaceDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}">
+                                            <MenuItem Header="🛡️ Allow &amp; Trust Application (Bypass Alerts)" Click="OnNetAllowAppClick" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" />
+                                            <MenuItem Header="🔇 Toggle Notification Mute for App" Click="OnNetToggleMuteClick" />
+                                            <Separator Background="{DynamicResource BorderBrush}" />
+                                            <MenuItem Header="🛑 Terminate Process (Kill Once)" Click="OnNetKillProcessClick" Foreground="{DynamicResource StatusDangerBrush}" />
+                                            <MenuItem Header="🌐 Block from Internet (Permanent Firewall Quarantine)" Click="OnNetBlockFirewallClick" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                            <MenuItem Header="🚫 Block Execution Entirely (Permanent IFEO Blacklist)" Click="OnNetBlockExecutionClick" Foreground="{DynamicResource StatusWarningBrush}" />
+                                            <Separator Background="{DynamicResource BorderBrush}" />
+                                            <MenuItem Header="📂 Open File Location in Explorer" Click="OnNetOpenFileLocationClick" />
+                                            <MenuItem Header="📋 Copy Remote Endpoint" Click="OnNetCopyEndpointClick" />
+                                            <MenuItem Header="🔍 Inspect in Process Manager" Click="OnNetInspectProcessClick" />
+                                        </ContextMenu>
+                                    </ListView.ContextMenu>
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Risk / Threat" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="#1A00E599" />
+                                                                    <Setter Property="BorderBrush" Value="#4000E599" />
+                                                                    <Setter Property="BorderThickness" Value="1" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding ThreatSeverity}" Value="ALLOWED">
+                                                                            <Setter Property="Background" Value="#2500E599" />
+                                                                            <Setter Property="BorderBrush" Value="#8000E599" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding ThreatSeverity}" Value="CRITICAL">
+                                                                            <Setter Property="Background" Value="#30EF4444" />
+                                                                            <Setter Property="BorderBrush" Value="#B0EF4444" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding ThreatSeverity}" Value="SUSPICIOUS">
+                                                                            <Setter Property="Background" Value="#30F59E0B" />
+                                                                            <Setter Property="BorderBrush" Value="#B0F59E0B" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock ToolTip="{Binding ThreatReason}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="✅ Safe" />
+                                                                        <Setter Property="Foreground" Value="{DynamicResource StatusSafeBrush}" />
+                                                                        <Setter Property="FontSize" Value="11" />
+                                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ThreatSeverity}" Value="ALLOWED">
+                                                                                <Setter Property="Text" Value="🛡️ Allowed" />
+                                                                                <Setter Property="Foreground" Value="{DynamicResource StatusSafeBrush}" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding ThreatSeverity}" Value="CRITICAL">
+                                                                                <Setter Property="Text" Value="🚨 CRITICAL" />
+                                                                                <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding ThreatSeverity}" Value="SUSPICIOUS">
+                                                                                <Setter Property="Text" Value="⚠️ ALERT" />
+                                                                                <Setter Property="Foreground" Value="{DynamicResource StatusWarningBrush}" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Application (PID)" Width="170">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" ToolTip="{Binding ProcessPath}">
+                                                            <TextBlock Text="{Binding IconGlyph}" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding ProcessName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Text="{Binding ProcessId, StringFormat=' ({0})'}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Direction" Width="135">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Direction}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Proto / Svc" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Protocol}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" Margin="0,0,4,0" />
+                                                            <TextBlock Text="{Binding ServiceName}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Local Socket" Width="160">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding LocalAddress}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" FontFamily="Consolas, Segoe UI" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Remote Endpoint &amp; Domain" Width="240">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding DisplayRemote}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontFamily="Consolas, Segoe UI" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayRemote}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="State" Width="100">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding State}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentGlowBrush}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Executable Location" Width="220">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding ProcessPath}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ProcessPath}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </Grid>
+
+                        <!-- VIEW B: Choose & Manage PC Apps (All Detected) -->
+                        <Grid x:Name="ViewNetDiscover" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                <Grid DockPanel.Dock="Left" Width="360">
+                                    <TextBox x:Name="TxtNetDiscoverFilter" Style="{StaticResource FluentSearchBox}"
+                                             Padding="10,6,28,6" Height="32"
+                                             TextChanged="OnNetDiscoverFilterChanged"
+                                             ToolTip="Search apps by name, executable, category, or path" />
+                                    <TextBlock x:Name="TxtNetDiscoverFilterPlaceholder" Text="Search all PC apps (e.g. Antigravity, Discord, Code)..."
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               VerticalAlignment="Center" Margin="10,0,0,0"
+                                               IsHitTestVisible="False" FontSize="11" />
+                                    <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                                </Grid>
+
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Rescan PC" Click="OnNetRescanAppsClick" Margin="0,0,8,0" Height="32" ToolTip="Rescan running processes and installed programs" />
+                                    <Button Style="{StaticResource VortexPrimaryButton}" Content="📂 Browse .exe File..." Click="OnNetBrowseCustomAppClick" Height="32" ToolTip="Select any custom executable file on your computer" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                                <ListView x:Name="LvNetDiscoverApps" SelectionMode="Single">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Application &amp; Process" Width="240">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" ToolTip="{Binding ExecutablePath}">
+                                                            <TextBlock Text="{Binding IconGlyph}" FontSize="15" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Text="{Binding ProcessName}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Category &amp; Activity" Width="180">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Category}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                                            <TextBlock Text="{Binding RunningBadge}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,2,0,0" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Access Rule Status" Width="160">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#18FFFFFF" BorderThickness="1">
+                                                            <TextBlock Text="{Binding StatusDisplay}" FontSize="11" FontWeight="SemiBold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding AccessStatus}" Value="ALLOWED">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource StatusSafeBrush}" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding AccessStatus}" Value="BLOCKED_FIREWALL">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding AccessStatus}" Value="BLOCKED_EXECUTION">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Alerts" Width="95">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Style="{StaticResource VortexSecondaryButton}" Click="OnNetToggleNotificationDiscoverClick" Padding="6,2" FontSize="10" ToolTip="Click to toggle intrusion toast alerts for this app">
+                                                            <TextBlock Text="{Binding NotificationDisplay}" Foreground="{DynamicResource AccentGlowBrush}" />
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Quick Actions" Width="230">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <Button Style="{StaticResource VortexPrimaryButton}" Content="🛡️ Allow" Click="OnNetAllowDiscoverClick" Padding="8,3" FontSize="10" Margin="0,0,4,0" ToolTip="Trust this app and allow network access without intrusion alerts" />
+                                                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🚫 Block" Click="OnNetBlockDiscoverClick" Padding="8,3" FontSize="10" Margin="0,0,4,0" Foreground="{DynamicResource StatusWarningBrush}" ToolTip="Quarantine this app from network access via Windows Firewall" />
+                                                            <Button Style="{StaticResource VortexSecondaryButton}" Content="✕ Reset" Click="OnNetResetDiscoverClick" Padding="6,3" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" ToolTip="Reset to default monitoring" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </Grid>
+
+                        <!-- VIEW C: My Allowed Apps -->
+                        <Grid x:Name="ViewNetAllowed" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                <Grid DockPanel.Dock="Left" Width="280">
+                                    <TextBox x:Name="TxtNetAllowedFilter" Style="{StaticResource FluentSearchBox}"
+                                             Padding="10,6,28,6" Height="32"
+                                             TextChanged="OnNetAllowedFilterChanged" />
+                                    <TextBlock x:Name="TxtNetAllowedFilterPlaceholder" Text="Filter allowed apps..."
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               VerticalAlignment="Center" Margin="10,0,0,0"
+                                               IsHitTestVisible="False" FontSize="11" />
+                                </Grid>
+                            </DockPanel>
+
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                                <ListView x:Name="LvNetAllowedApps" SelectionMode="Single">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Application" Width="200">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="🛡️" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                                                <TextBlock Text="{Binding ProcessName}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Category" Width="140" DisplayMemberBinding="{Binding Category}" />
+                                            <GridViewColumn Header="Executable Location" Width="280">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding ExecutablePath}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ExecutablePath}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Alerts" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Style="{StaticResource VortexSecondaryButton}" Click="OnNetToggleNotificationAllowedClick" Padding="6,2" FontSize="10">
+                                                            <TextBlock Text="{Binding NotificationDisplay}" Foreground="{DynamicResource AccentGlowBrush}" />
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Action" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="🗑️ Revoke" Click="OnNetRemoveAllowedClick" Padding="6,2" FontSize="11" Foreground="{DynamicResource StatusDangerBrush}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </Grid>
+
+                        <!-- VIEW D: Blocked Apps -->
+                        <Grid x:Name="ViewNetBlocked" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                <Grid DockPanel.Dock="Left" Width="280">
+                                    <TextBox x:Name="TxtNetBlockedFilter" Style="{StaticResource FluentSearchBox}"
+                                             Padding="10,6,28,6" Height="32"
+                                             TextChanged="OnNetBlockedFilterChanged" />
+                                    <TextBlock x:Name="TxtNetBlockedFilterPlaceholder" Text="Filter blocked apps..."
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               VerticalAlignment="Center" Margin="10,0,0,0"
+                                               IsHitTestVisible="False" FontSize="11" />
+                                </Grid>
+                            </DockPanel>
+
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                                <ListView x:Name="LvNetBlockedApps" SelectionMode="Single">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Application" Width="180" DisplayMemberBinding="{Binding ProcessName}" />
+                                            <GridViewColumn Header="Block Type" Width="180">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#207C3AED" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1">
+                                                            <TextBlock Text="{Binding BlockTypeDisplay}" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" FontWeight="SemiBold" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Executable Path" Width="300">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding ExecutablePath}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ExecutablePath}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Action" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="🔓 Unblock" Click="OnNetUnblockRowClick" Padding="8,3" FontSize="11" Foreground="{DynamicResource StatusSafeBrush}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <!-- TAB 6: Services Controller -->
+                <Grid x:Name="PanelServices" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,14">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Windows Services" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Manage background services to optimize memory." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Grid Width="200" Margin="0,0,8,0">
+                                <TextBox x:Name="TxtServiceFilter" Style="{StaticResource FluentSearchBox}"
+                                         Padding="10,6,28,6" Height="32"
+                                         TextChanged="OnServiceFilterChanged"
+                                         ToolTip="Filter services by name, display title, or status" />
+                                <TextBlock x:Name="TxtServiceFilterPlaceholder" Text="Filter services..."
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           VerticalAlignment="Center" Margin="10,0,0,0"
+                                           IsHitTestVisible="False" FontSize="11" />
+                                <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                           Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                            </Grid>
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Rescan Services" Click="OnRefreshServicesClick" Height="32" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvServices">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Service Name" Width="140" DisplayMemberBinding="{Binding ServiceName}" />
+                                    <GridViewColumn Header="Display Title" Width="240" DisplayMemberBinding="{Binding DisplayName}" />
+                                    <GridViewColumn Header="Status" Width="90" DisplayMemberBinding="{Binding Status}" />
+                                    <GridViewColumn Header="RAM Impact" Width="90" DisplayMemberBinding="{Binding Impact}" />
+                                    <GridViewColumn Header="Recommendation" Width="320" DisplayMemberBinding="{Binding Recommendation}" />
+                                    <GridViewColumn Header="Action" Width="100">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource VortexSecondaryButton}" Content="Toggle" Click="OnToggleServiceRowClick" Padding="10,3" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 7: Gaming & Focus Mode (FULL PAGE VIEW) -->
+                <Grid x:Name="PanelFocus" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,16">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Gaming &amp; Focus Mode" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Suspend background daemons and update tasks during focus." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="380" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Control Card -->
+                        <Border Grid.Column="0" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="24" Margin="0,0,16,0">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,16" HorizontalAlignment="Center">
+                                    <TextBlock Text="🎯" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <TextBlock Text="Focus Mode Status" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
+                                <TextBlock x:Name="TxtFocusStatus" Text="Focus Mode is currently OFF." Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,20" />
+
+                                <Button x:Name="BtnToggleFocusMode" Style="{StaticResource VortexPrimaryButton}" Content="🚀 ACTIVATE FOCUS MODE" Click="OnToggleFocusModeClick" FontSize="13" Padding="20,10" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Right Info & Monitored Daemons Card -->
+                        <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="MANAGED BACKGROUND SERVICES" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" FontSize="11" Margin="0,0,0,12" />
+                                    
+                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                        <Grid>
+                                            <StackPanel>
+                                                <TextBlock Text="Adobe Creative Cloud Helpers &amp; IPC" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Text="Creative Cloud UI Helper, AdobeDesktopService, IPCBroker" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                            <TextBlock Text="~150 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                        <Grid>
+                                            <StackPanel>
+                                                <TextBlock Text="OEM Diagnostics &amp; Background Helpers" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Text="HP Support Framework, HP OmniHub, OEM Update Checkers" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                            <TextBlock Text="~80 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                        <Grid>
+                                            <StackPanel>
+                                                <TextBlock Text="Browser Background Workers &amp; Crash Reporters" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Text="GoogleCrashHandler, MicrosoftEdgeUpdate, Telemetry hosts" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                            <TextBlock Text="~60 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                        <Grid>
+                                            <StackPanel>
+                                                <TextBlock Text="Windows Error Reporting &amp; Telemetries" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Text="WerFault, DiagTrack, Connected User Experiences" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                            <TextBlock Text="~50 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <!-- TAB 8: Audit & History (FULL PAGE VIEW) -->
+                <Grid x:Name="PanelHistory" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,14">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Audit Log &amp; History" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Persistent record of system optimizations and cleanups." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource VortexSecondaryButton}" Content="🔄 Refresh Logs" Click="OnRefreshHistoryClick" HorizontalAlignment="Right" />
+                    </DockPanel>
+
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvHistory">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Timestamp" Width="160" DisplayMemberBinding="{Binding Timestamp}" />
+                                    <GridViewColumn Header="Action" Width="130" DisplayMemberBinding="{Binding ActionType}" />
+                                    <GridViewColumn Header="Target" Width="180" DisplayMemberBinding="{Binding Target}" />
+                                    <GridViewColumn Header="Reclaimed" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding BytesReclaimed, StringFormat='{}{0:N0} bytes'}" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="SemiBold" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Details" Width="400" DisplayMemberBinding="{Binding Details}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 9: Privacy Eraser -->
+                <Grid x:Name="PanelPrivacy" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="Privacy Eraser" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Clear recent files, search history, clipboard, and system traces." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Scan Traces" Click="OnScanPrivacyClick" Height="34" Padding="14,0" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource VortexDangerButton}" Content="🧹 Erase Selected" Click="OnErasePrivacyClick" Height="34" Padding="16,0" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ProgressBar x:Name="PbPrivacyScan" Grid.Row="1" Height="3" IsIndeterminate="True" Margin="0,0,0,10" Visibility="Collapsed" Foreground="{DynamicResource AccentPrimaryBrush}" Background="Transparent" />
+
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvPrivacy">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Width="26">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Trace Category" Width="180" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Risk" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{Binding RiskBadgeColor}" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding RiskBadgeText}" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Items" Width="70" DisplayMemberBinding="{Binding ItemCount}" />
+                                    <GridViewColumn Header="Size" Width="80" DisplayMemberBinding="{Binding SizeString}" />
+                                    <GridViewColumn Header="Description" Width="420" DisplayMemberBinding="{Binding Description}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 10: Identity Shield -->
+                <Grid x:Name="PanelIdentity" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="Identity Shield" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Scan local credential stores, Wi-Fi profiles, and SSH keys." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Button Grid.Row="1" Style="{StaticResource VortexSecondaryButton}" Content="🔍 Scan Identity Exposure" Click="OnScanIdentityClick" Height="34" Padding="14,0" HorizontalAlignment="Right" Margin="0,8,0,0" />
+                    </Grid>
+
+                    <ProgressBar x:Name="PbIdentityScan" Grid.Row="1" Height="3" IsIndeterminate="True" Margin="0,0,0,6" Visibility="Collapsed" Foreground="{DynamicResource AccentPrimaryBrush}" Background="Transparent" />
+
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
+                        <TextBlock Text="🔒 Identity Shield is read-only — it scans and reports. Use the Action button on each finding to manage it in the appropriate native tool." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                    </Border>
+
+                    <Border Grid.Row="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvIdentity">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Category" Width="140" DisplayMemberBinding="{Binding Category}" />
+                                    <GridViewColumn Header="Name" Width="160" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Risk" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{Binding RiskBadgeColor}" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding RiskBadgeText}" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Detail" Width="240" DisplayMemberBinding="{Binding Detail}" />
+                                    <GridViewColumn Header="Action" Width="160">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding ActionLabel}" Style="{StaticResource VortexSecondaryButton}" Click="OnIdentityActionClick" Tag="{Binding ActionTarget}" Padding="8,3" FontSize="11" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+                <!-- TAB 10B: Data Shield & Zero-Trust File Vault -->
+                <Grid x:Name="PanelVault" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header & Master Controls -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Data Shield &amp; Zero-Trust Vault" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Lock directories with AES-256-GCM, enable stealth invisibility, and prevent unauthorized USB file copying." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button x:Name="BtnVaultSetupMaster" Style="{StaticResource VortexSecondaryButton}" Content="🔑 Master Security" Click="OnVaultSetupMasterClick" Margin="0,0,8,0" Height="32" ToolTip="Configure Master Password and Emergency Recovery Key" />
+                            <Button x:Name="BtnVaultLockAll" Style="{StaticResource VortexDangerButton}" Content="🔒 Lock All Vaults" Click="OnVaultLockAllClick" Height="32" ToolTip="Immediately seal and hide all protected directories" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Telemetry & Status Cards -->
+                    <Grid Grid.Row="1" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Card 1: Protected Vaults -->
+                        <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="📁 PROTECTED VAULTS" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock x:Name="TxtVaultCount" Text="0 Vaults" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" />
+                                <TextBlock x:Name="TxtVaultCountSub" Text="0 Locked | 0 Unlocked" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Total Encrypted Data -->
+                        <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="🔐 ENCRYPTED STORAGE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock x:Name="TxtVaultTotalSize" Text="0 MB" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,2,0,0" />
+                                <TextBlock x:Name="TxtVaultFilesSub" Text="0 Total Files Protected" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: USB DLP Guard -->
+                        <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="💾 USB DATA LOSS GUARD" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock x:Name="TxtVaultUsbStatus" Text="🔓 Standard (Write Allowed)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="TxtVaultUsbSub" Text="Click to enforce Read-Only" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,3,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Auto-Lock Sentinel -->
+                        <Border Grid.Column="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10">
+                            <StackPanel>
+                                <TextBlock Text="⏱️ AUTO-LOCK SENTINEL" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock x:Name="TxtVaultAutoLockStatus" Text="🛡️ Active (Win+L / 15m)" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource StatusSafeBrush}" Margin="0,4,0,0" />
+                                <TextBlock x:Name="TxtVaultAutoLockSub" Text="Seals on sleep or lock" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,3,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Segmented Sub-Tab Bar -->
+                    <DockPanel Grid.Row="2" Margin="0,0,0,10">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <RadioButton x:Name="SubTabVaultFolders" Style="{StaticResource SidebarRadioButton}" Content="📁 Protected Folders &amp; Vaults (0)" IsChecked="True" Checked="OnVaultSubTabChanged" Margin="0,0,8,0" Height="32" Width="230" />
+                            <RadioButton x:Name="SubTabVaultUsb" Style="{StaticResource SidebarRadioButton}" Content="💾 USB &amp; External Media Guard (DLP)" Checked="OnVaultSubTabChanged" Margin="0,0,8,0" Height="32" Width="250" />
+                            <RadioButton x:Name="SubTabVaultSettings" Style="{StaticResource SidebarRadioButton}" Content="⚙️ Security &amp; Auto-Lock Settings" Checked="OnVaultSubTabChanged" Margin="0,0,8,0" Height="32" Width="220" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Dynamic Sub-Views Container -->
+                    <Grid Grid.Row="3">
+                        <!-- VIEW 1: Protected Folders List -->
+                        <Grid x:Name="ViewVaultFolders" Visibility="Visible">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                <Grid DockPanel.Dock="Left" Width="300">
+                                    <TextBox x:Name="TxtVaultFilter" Style="{StaticResource FluentSearchBox}"
+                                             Padding="10,6,28,6" Height="32"
+                                             TextChanged="OnVaultFilterChanged"
+                                             ToolTip="Filter protected folders by name or path" />
+                                    <TextBlock x:Name="TxtVaultFilterPlaceholder" Text="Filter protected folders..."
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               VerticalAlignment="Center" Margin="10,0,0,0"
+                                               IsHitTestVisible="False" FontSize="11" />
+                                    <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                                </Grid>
+
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Refresh" Click="OnVaultRefreshClick" Margin="0,0,8,0" Height="32" />
+                                    <Button Style="{StaticResource VortexPrimaryButton}" Content="➕ Add Folder to Vault..." Click="OnVaultAddFolderClick" Height="32" ToolTip="Select any directory on your computer to encrypt and protect" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                                <ListView x:Name="LvVaultFolders" SelectionMode="Single">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Folder &amp; Path" Width="260">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" ToolTip="{Binding FolderPath}">
+                                                            <TextBlock Text="{Binding IconGlyph}" FontSize="15" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding FolderName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Text="{Binding FolderPath}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" TextTrimming="CharacterEllipsis" MaxWidth="200" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Size &amp; Files" Width="130">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding SizeFormatted}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" />
+                                                            <TextBlock Text="{Binding FileCount, StringFormat='{}{0:N0} files'}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Protection Mode" Width="140">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding ModeDisplay}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Status" Width="180">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#18FFFFFF" BorderThickness="1">
+                                                            <TextBlock Text="{Binding StatusDisplay}" Foreground="{Binding StatusBadgeColor}" FontSize="11" FontWeight="SemiBold" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Quick Actions" Width="240">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <!-- Toggle Lock/Unlock -->
+                                                            <Button Style="{StaticResource VortexPrimaryButton}" Click="OnVaultToggleLockRowClick" Padding="8,3" FontSize="10.5" Margin="0,0,4,0">
+                                                                <TextBlock>
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Text" Value="🔒 Lock" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                                                                    <Setter Property="Text" Value="🔓 Unlock" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Button>
+
+                                                            <!-- Toggle Stealth Mode -->
+                                                            <Button Style="{StaticResource VortexSecondaryButton}" Click="OnVaultToggleStealthRowClick" Padding="6,3" FontSize="10.5" Margin="0,0,4,0" ToolTip="Switch between Invisible (Stealth) and Visible (Locked) mode">
+                                                                <TextBlock>
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Text" Value="👻 Stealth" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsStealth}" Value="True">
+                                                                                    <Setter Property="Text" Value="👁️ Visible" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Button>
+
+                                                            <!-- Open in Explorer -->
+                                                            <Button Style="{StaticResource VortexSecondaryButton}" Content="📂 Open" Click="OnVaultOpenFolderRowClick" Padding="6,3" FontSize="10.5" Margin="0,0,4,0" ToolTip="Open folder in Windows File Explorer" />
+
+                                                            <!-- Remove from Vault -->
+                                                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🗑️" Click="OnVaultRemoveRowClick" Padding="6,3" FontSize="10.5" Foreground="{DynamicResource StatusDangerBrush}" ToolTip="Remove from Vault protection and restore unencrypted" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </Grid>
+
+                        <!-- VIEW 2: USB & Removable Media Guard (DLP) -->
+                        <Grid x:Name="ViewVaultUsb" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Hero Master USB Switch Card -->
+                            <Border Grid.Row="0" CornerRadius="10" Padding="20,16" Margin="0,0,0,12" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="10" Background="{DynamicResource AccentGlowBrush}" Margin="0,0,16,0">
+                                        <TextBlock Text="💾" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                            <TextBlock Text="Removable Media Copy-Protection (DLP)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" />
+                                            <Border CornerRadius="4" Padding="6,2" Background="#20000000">
+                                                <TextBlock x:Name="TxtUsbPolicyBadge" Text="STATUS: UNPROTECTED" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="Enforces low-level Windows kernel Read-Only policy on all USB thumb drives, SD cards, and external HDDs/SSDs to prevent file theft and unauthorized copy/paste."
+                                                   FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" MaxWidth="620" TextWrapping="Wrap" />
+                                    </StackPanel>
+
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <Button x:Name="BtnToggleUsbWriteBlock" Style="{StaticResource VortexPrimaryButton}" Content="🔒 Enable USB Write-Block" Click="OnToggleUsbWriteBlockClick" Height="36" Padding="16,0" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Temporary Write Authorization Window Card -->
+                            <Border Grid.Row="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,12" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="⏱️ Temporary Write Authorization Window" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock x:Name="TxtUsbCountdown" Text="Need to copy legitimate files to a USB? Authorize a timed write window with your Master Password." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="⏱️ 5 Minutes" Click="OnAuthorizeUsb5MinClick" Margin="0,0,6,0" Padding="10,4" FontSize="11" />
+                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="⏱️ 15 Minutes" Click="OnAuthorizeUsb15MinClick" Margin="0,0,6,0" Padding="10,4" FontSize="11" />
+                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="⏱️ 30 Minutes" Click="OnAuthorizeUsb30MinClick" Margin="0,0,6,0" Padding="10,4" FontSize="11" />
+                                        <Button x:Name="BtnLockUsbNow" Style="{StaticResource VortexDangerButton}" Content="🔒 Lock USB Now" Click="OnLockUsbNowClick" Padding="10,4" FontSize="11" Visibility="Collapsed" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Connected Removable Drives Table -->
+                            <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                                <ListView x:Name="LvRemovableDrives" SelectionMode="Single">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Connected Drive" Width="220">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="💾" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                                                <TextBlock Text="{Binding DriveFormat, StringFormat='Format: {0}'}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Capacity &amp; Free Space" Width="200">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding SizeFormatted, StringFormat='Capacity: {0}'}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+
+                                            <GridViewColumn Header="Write-Protection Status" Width="240">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" Background="#18FFFFFF" BorderThickness="1">
+                                                            <TextBlock Text="{Binding StatusDisplay}" Foreground="{Binding StatusBadgeColor}" FontSize="11" FontWeight="SemiBold" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </Grid>
+
+                        <!-- VIEW 3: Security & Auto-Lock Settings -->
+                        <Grid x:Name="ViewVaultSettings" Visibility="Collapsed">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+                                    <!-- Group 1: Master Security Credentials -->
+                                    <TextBlock Text="MASTER SECURITY CREDENTIALS" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentGlowBrush}" Margin="0,0,0,8" />
+                                    <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <DockPanel Margin="0,0,0,12">
+                                                <StackPanel DockPanel.Dock="Left">
+                                                    <TextBlock Text="Master Password &amp; Encryption Key" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <TextBlock Text="Controls folder locking and USB write authorizations via PBKDF2 + AES-256-GCM." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <Button Style="{StaticResource VortexSecondaryButton}" Content="🔑 Change Password" Click="OnChangeVaultPasswordClick" DockPanel.Dock="Right" Height="30" Padding="12,0" />
+                                            </DockPanel>
+                                            <Separator Background="{DynamicResource BorderBrush}" Margin="0,0,0,12" />
+                                            <DockPanel>
+                                                <StackPanel DockPanel.Dock="Left">
+                                                    <TextBlock Text="Emergency 24-Character Recovery Key" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <TextBlock Text="Used to restore access if you ever forget your Master Password." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <Button Style="{StaticResource VortexSecondaryButton}" Content="📋 View Recovery Key" Click="OnViewRecoveryKeyClick" DockPanel.Dock="Right" Height="30" Padding="12,0" />
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Group 2: Auto-Lock Sentinel Policies -->
+                                    <TextBlock Text="AUTO-LOCK SENTINEL POLICIES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentGlowBrush}" Margin="0,0,0,8" />
+                                    <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <CheckBox x:Name="ChkVaultLockOnScreenLock" Style="{StaticResource ModernCheckBox}" Content="Auto-Lock all vaults when Windows locks (Win + L) or screen sleeps" Click="OnVaultAutoLockPolicyChanged" Margin="0,0,0,12" />
+                                            <Separator Background="{DynamicResource BorderBrush}" Margin="0,0,0,12" />
+                                            <DockPanel>
+                                                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="Inactivity Auto-Lock Timeout" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <TextBlock Text="Automatically seal all open vaults after a period of no keyboard/mouse input." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <ComboBox x:Name="CmbVaultIdleMinutes" Width="140" Height="30" DockPanel.Dock="Right" SelectionChanged="OnVaultIdleMinutesChanged">
+                                                    <ComboBoxItem Content="5 Minutes" Tag="5" />
+                                                    <ComboBoxItem Content="15 Minutes" Tag="15" />
+                                                    <ComboBoxItem Content="30 Minutes" Tag="30" />
+                                                    <ComboBoxItem Content="60 Minutes" Tag="60" />
+                                                    <ComboBoxItem Content="Disabled (Never)" Tag="0" />
+                                                </ComboBox>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Group 3: Windows Explorer Integration -->
+                                    <TextBlock Text="WINDOWS EXPLORER RIGHT-CLICK INTEGRATION" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentGlowBrush}" Margin="0,0,0,8" />
+                                    <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <CheckBox x:Name="ChkVaultContextMenu" Style="{StaticResource ModernCheckBox}" Content="Show '🛡️ Vortex: Protect &amp; Lock Folder' in Windows File Explorer right-click menu" Click="OnVaultContextMenuPolicyChanged" />
+                                            <TextBlock Text="Allows right-clicking any folder on your drive to instantly lock or stealth-hide it." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="26,4,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <!-- TAB 11: Software Updater -->
+                <Grid x:Name="PanelUpdater" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="Software Updater" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Keep installed applications updated via winget." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="☑ Select All Known" Click="OnSelectAllKnownClick" Height="34" Padding="14,0" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Check for Updates" Click="OnCheckUpdatesClick" Height="34" Padding="14,0" Margin="0,0,8,0" />
+                            <Button x:Name="BtnCleanCache" Style="{StaticResource VortexSecondaryButton}" Content="🧹 Clear Cache" Click="OnCleanDownloadCacheClick" Height="34" Padding="14,0" Margin="0,0,8,0" ToolTip="Deletes temporary installer files left behind by winget to free up disk space." />
+                            <Button x:Name="BtnStopUpdater" Style="{StaticResource VortexDangerButton}" Content="⏹ Stop Update" Click="OnStopUpdateClick" Height="34" Padding="16,0" Margin="0,0,8,0" Visibility="Collapsed" FontWeight="SemiBold" />
+                            <Button x:Name="BtnUpdateSelected" Style="{StaticResource VortexPrimaryButton}" Content="🚀 Update Selected" Click="OnUpdateSelectedClick" Height="34" Padding="16,0" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ProgressBar x:Name="PbUpdaterScan" Grid.Row="1" Height="3" IsIndeterminate="True" Margin="0,0,0,10" Visibility="Collapsed" Foreground="{DynamicResource AccentPrimaryBrush}" Background="Transparent" />
+
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2" Margin="0,0,0,10">
+                        <ListView x:Name="LvUpdater" MaxHeight="260" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionMode="Single">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Width="46">
+                                        <GridViewColumn.Header>
+                                            <CheckBox x:Name="ChkSelectAllHeader" Click="OnSelectAllHeaderClick" VerticalAlignment="Center" HorizontalAlignment="Center" ToolTip="Select / Deselect All Known" />
+                                        </GridViewColumn.Header>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2,0" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Application" Width="200">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Package ID" Width="210">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Id}" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Current" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding CurrentVer}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="4,0" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Latest" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding LatestVer}" FontWeight="Medium" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="4,0" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Status" Width="95">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{Binding BadgeColor}" CornerRadius="4" Padding="7,2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2,0">
+                                                    <TextBlock Text="{Binding BadgeText}" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+
+                    <!-- Active Update Progress Card -->
+                    <Border x:Name="BorderUpdaterProgress" Grid.Row="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Overall Progress Header -->
+                            <Grid Grid.Row="0" Margin="0,0,0,6">
+                                <TextBlock x:Name="TxtOverallProgressTitle" Text="Overall Progress" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock x:Name="TxtOverallProgressPercent" Text="0%" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" />
+                            </Grid>
+                            <ProgressBar x:Name="PbOverallProgress" Grid.Row="1" Height="6" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="#1F1F2E" Margin="0,0,0,12" />
+
+                            <!-- Current Package Download/Install Progress Header -->
+                            <Grid Grid.Row="2" Margin="0,0,0,6">
+                                <TextBlock x:Name="TxtPackageProgressTitle" Text="Download &amp; Install Progress" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock x:Name="TxtPackageProgressDetail" Text="" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </Grid>
+                            <ProgressBar x:Name="PbPackageProgress" Grid.Row="3" Height="8" Maximum="100" Value="0" Foreground="#00E599" Background="#1F1F2E" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Live Terminal Output -->
+                    <Border Grid.Row="4" x:Name="BorderUpdaterTerminal" Background="#0A0A0F" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Visibility="Collapsed">
+                        <ScrollViewer x:Name="SvUpdaterOutput" VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="TxtUpdaterOutput" FontFamily="Consolas" FontSize="12" Foreground="#00E599" TextWrapping="Wrap" />
+                        </ScrollViewer>
+                    </Border>
+
+                    <TextBlock x:Name="TxtUpdaterStatus" Grid.Row="5" Text="Ready — click 'Check for Updates' to discover available upgrades." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,8,0,0" />
+                </Grid>
+
+                <!-- TAB 12: System Info -->
+                <Grid x:Name="PanelSysInfo" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="System Information" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Hardware specifications and live sensor telemetry." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="📄 Export TXT" Click="OnExportSysInfoClick" Height="34" Padding="14,0" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Refresh" Click="OnRefreshSysInfoClick" Height="34" Padding="14,0" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Live Sensor Cards Row -->
+                    <Grid Grid.Row="1" Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- CPU Card -->
+                        <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="⚡ CPU" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" />
+                                <TextBlock x:Name="TxtCpuTemp" Text="— °C" Foreground="{DynamicResource AccentGlowBrush}" FontSize="22" FontWeight="Bold" Margin="0,4,0,2" />
+                                <TextBlock x:Name="TxtCpuUsage" Text="Usage: —%" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- GPU Card -->
+                        <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="🎮 GPU" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" />
+                                <TextBlock x:Name="TxtGpuTemp" Text="— °C" Foreground="{DynamicResource AccentGlowBrush}" FontSize="22" FontWeight="Bold" Margin="0,4,0,2" />
+                                <TextBlock x:Name="TxtGpuUsage" Text="Usage: —%" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Disk Card -->
+                        <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="💾 DISK" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" />
+                                <TextBlock x:Name="TxtDiskTemp" Text="— °C" Foreground="{DynamicResource AccentGlowBrush}" FontSize="22" FontWeight="Bold" Margin="0,4,0,2" />
+                                <TextBlock x:Name="TxtMbTemp" Text="MB: — °C" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- RAM Card -->
+                        <Border Grid.Column="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10">
+                            <StackPanel>
+                                <TextBlock Text="🧠 RAM" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" />
+                                <TextBlock x:Name="TxtSysRamPct" Text="—%" Foreground="{DynamicResource AccentGlowBrush}" FontSize="22" FontWeight="Bold" Margin="0,4,0,2" />
+                                <TextBlock x:Name="TxtSysRamUsed" Text="— / — GB" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Tab Strip for spec categories -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+                        <RadioButton x:Name="SysTabCpu"  GroupName="SysInfoTab" Content="CPU"         Style="{StaticResource FluentNavItem}" IsChecked="True" Checked="OnSysInfoTabChanged" Padding="12,6" />
+                        <RadioButton x:Name="SysTabGpu"  GroupName="SysInfoTab" Content="GPU"         Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
+                        <RadioButton x:Name="SysTabRam"  GroupName="SysInfoTab" Content="Memory"      Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
+                        <RadioButton x:Name="SysTabDisk" GroupName="SysInfoTab" Content="Storage"     Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
+                        <RadioButton x:Name="SysTabMb"   GroupName="SysInfoTab" Content="Motherboard" Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
+                        <RadioButton x:Name="SysTabOs"   GroupName="SysInfoTab" Content="OS &amp; Software" Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
+                    </StackPanel>
+
+                    <!-- Spec Table -->
+                    <Border Grid.Row="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                        <ListView x:Name="LvSysInfo">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Property" Width="260" DisplayMemberBinding="{Binding Property}" />
+                                    <GridViewColumn Header="Value" Width="650" DisplayMemberBinding="{Binding Value}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border>
+                </Grid>
+
+            </Grid>
+        </Grid>
+
+        <!-- 3. Slim Bottom Status Bar -->
+        <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,0">
+            <DockPanel VerticalAlignment="Center">
+                <TextBlock x:Name="TxtStatusBar" Text="Vortex Fluent Engine Ready • Administrator Elevated" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
