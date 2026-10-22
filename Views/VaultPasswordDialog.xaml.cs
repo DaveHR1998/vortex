@@ -91,9 +91,19 @@ namespace Vortex.Views
             Close();
         }
 
-        public static (bool authenticated, string credential) Prompt(Window owner, FolderLockService lockService, string title = "Authentication Required", string prompt = "Enter your Master Password to proceed.")
+        public static (bool authenticated, string credential) Prompt(Window? owner, FolderLockService lockService, string title = "Authentication Required", string prompt = "Enter your Master Password to proceed.")
         {
-            var dlg = new VaultPasswordDialog(lockService, title, prompt) { Owner = owner };
+            var dlg = new VaultPasswordDialog(lockService, title, prompt);
+            if (owner != null && owner.IsVisible)
+            {
+                dlg.Owner = owner;
+            }
+            else
+            {
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                dlg.Topmost = true;
+                dlg.ShowInTaskbar = true;
+            }
             bool? res = dlg.ShowDialog();
             return (res == true && dlg.IsAuthenticated, dlg.EnteredCredential);
         }

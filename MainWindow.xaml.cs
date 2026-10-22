@@ -100,6 +100,7 @@ namespace Vortex
             _folderLockService = new FolderLockService(_db, _vaultCrypto, _usbDlp);
 
             _folderLockService.OnVaultStateChanged += () => Dispatcher.Invoke(RefreshVaultView);
+            _folderLockService.OnLockedFolderAccessed += (vault) => Dispatcher.Invoke(() => OnLockedFolderAttemptDetected(vault));
             _folderLockService.OnAutoLockTriggered += (reason) =>
             {
                 Dispatcher.Invoke(() =>
@@ -2639,20 +2640,47 @@ namespace Vortex
                 var (auth, password) = VaultPasswordDialog.Prompt(this, _folderLockService, "Switch Protection Mode", $"Enter Master Password to switch '{item.FolderName}' between Stealth and Visible mode.");
                 if (auth)
                 {
-                    item.IsStealth = !item.IsStealth;
-                    if (item.IsLocked)
+                    var (success, msg) = _folderLockService.SetStealthMode(item.FolderPath, !item.IsStealth, password);
+                    if (success)
                     {
-                        _folderLockService.LockFolder(item.FolderPath, password);
+                        RefreshVaultView();
+                        TxtStatusBar.Text = msg;
                     }
                     else
                     {
-                        var settings = _folderLockService.GetSettings();
-                        _db.SaveVaultFolder(item);
+                        VortexDialogWindow.ShowWarning(this, "Vault Error", msg);
                     }
-                    RefreshVaultView();
-                    TxtStatusBar.Text = $"'{item.FolderName}' mode switched to: {(item.IsStealth ? "Invisible (Stealth)" : "Visible (Locked)")}.";
                 }
             }
+        }
+
+        private void OnLockedFolderAttemptDetected(VaultFolderModel vault)
+        {
+            try
+            {
+                bool wasVisible = IsVisible && WindowState != WindowState.Minimized;
+
+                // Prompt directly with topmost modal dialog without maximizing whole application dashboard
+                var (auth, password) = VaultPasswordDialog.Prompt(
+                    wasVisible ? this : null,
+                    _folderLockService,
+                    "Protected Folder Locked",
+                    $"'{vault.FolderName}' is currently locked with Vortex Shield.\nEnter your Master Password to decrypt and access:");
+
+                if (auth)
+                {
+                    var (success, msg) = _folderLockService.UnlockFolder(vault.FolderPath, password, openInExplorer: true);
+                    if (success)
+                    {
+                        if (wasVisible)
+                        {
+                            RefreshVaultView();
+                            TxtStatusBar.Text = $"'{vault.FolderName}' unlocked successfully.";
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void OnVaultOpenFolderRowClick(object sender, RoutedEventArgs e)

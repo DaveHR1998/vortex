@@ -11,7 +11,7 @@ Write-Host "==========================================================" -Foregro
 # 0. Kill any running app instances
 Stop-Process -Name Vortex, VortexSetup -Force -ErrorAction SilentlyContinue
 
-$rootDir = "c:\Users\daveH\Desktop\xfix"
+$rootDir = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $installerDir = Join-Path $rootDir "Installer"
 $stagingDir = Join-Path $rootDir "staging"
 $appStaging = Join-Path $stagingDir "app"

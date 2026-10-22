@@ -248,6 +248,8 @@ namespace Vortex.Core.Database
         public string PasswordHash { get; set; } = string.Empty;
         public string PasswordSalt { get; set; } = string.Empty;
         public string RecoveryKeyHash { get; set; } = string.Empty;
+        public string WrappedMasterKeyPassword { get; set; } = string.Empty;
+        public string WrappedMasterKeyRecovery { get; set; } = string.Empty;
         public bool AutoLockOnScreenLock { get; set; } = true;
         public int AutoLockIdleMinutes { get; set; } = 15;
         public bool UsbWriteBlockEnabled { get; set; } = false;

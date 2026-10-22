@@ -34,7 +34,8 @@ namespace Vortex.Tests
             }
             finally
             {
-                if (File.Exists(dbPath)) File.Delete(dbPath);
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { }
             }
         }
 
@@ -74,7 +75,8 @@ namespace Vortex.Tests
             }
             finally
             {
-                if (File.Exists(dbPath)) File.Delete(dbPath);
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { }
             }
         }
 
@@ -125,7 +127,8 @@ namespace Vortex.Tests
             }
             finally
             {
-                if (File.Exists(dbPath)) File.Delete(dbPath);
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { }
             }
         }
     }

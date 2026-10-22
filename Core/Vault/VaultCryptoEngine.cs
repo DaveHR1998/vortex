@@ -105,16 +105,112 @@ namespace Vortex.Core.Vault
         }
 
         /// <summary>
-        /// Encrypts an entire directory into an authenticated AES-256-GCM container file.
-        /// Performs atomic packaging to ensure zero data loss.
+        /// Generates a fresh random 256-bit Vault Master Key (VMK).
         /// </summary>
-        public (bool success, string error, long totalBytes, int fileCount) EncryptDirectoryToVault(
-            string sourceDirectory, string destinationVaultFile, string password)
+        public byte[] GenerateVaultMasterKey()
+        {
+            return RandomNumberGenerator.GetBytes(KeySizeBytes);
+        }
+
+        /// <summary>
+        /// Encrypts (wraps) the 256-bit Vault Master Key with a user credential (password or recovery key).
+        /// Output container format: Base64([Salt(32)] [Nonce(12)] [Tag(16)] [EncryptedVMK(32)])
+        /// </summary>
+        public string WrapMasterKey(byte[] masterKey, string credential)
+        {
+            if (masterKey == null || masterKey.Length != KeySizeBytes)
+                throw new ArgumentException("Master key must be exactly 32 bytes (256-bit).", nameof(masterKey));
+
+            string cleanCred = credential.Trim();
+            if (cleanCred.StartsWith("VRTX-", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanCred = cleanCred.Replace("-", "").ToUpperInvariant();
+            }
+
+            byte[] salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
+            byte[] kek = DeriveKey(cleanCred, salt);
+            byte[] nonce = RandomNumberGenerator.GetBytes(NonceSizeBytes);
+            byte[] tag = new byte[TagSizeBytes];
+            byte[] ciphertext = new byte[masterKey.Length];
+
+            using (var aesGcm = new AesGcm(kek, TagSizeBytes))
+            {
+                aesGcm.Encrypt(nonce, masterKey, ciphertext, tag, MagicHeader);
+            }
+
+            byte[] combined = new byte[SaltSizeBytes + NonceSizeBytes + TagSizeBytes + ciphertext.Length];
+            Buffer.BlockCopy(salt, 0, combined, 0, SaltSizeBytes);
+            Buffer.BlockCopy(nonce, 0, combined, SaltSizeBytes, NonceSizeBytes);
+            Buffer.BlockCopy(tag, 0, combined, SaltSizeBytes + NonceSizeBytes, TagSizeBytes);
+            Buffer.BlockCopy(ciphertext, 0, combined, SaltSizeBytes + NonceSizeBytes + TagSizeBytes, ciphertext.Length);
+
+            return Convert.ToBase64String(combined);
+        }
+
+        /// <summary>
+        /// Decrypts (unwraps) the 256-bit Vault Master Key using a user credential (password or recovery key).
+        /// </summary>
+        public (bool success, byte[] masterKey, string error) UnwrapMasterKey(string wrappedKeyBase64, string credential)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(wrappedKeyBase64) || string.IsNullOrEmpty(credential))
+                    return (false, Array.Empty<byte>(), "Wrapped key or credential is empty.");
+
+                byte[] combined = Convert.FromBase64String(wrappedKeyBase64);
+                int minLen = SaltSizeBytes + NonceSizeBytes + TagSizeBytes + KeySizeBytes;
+                if (combined.Length < minLen)
+                    return (false, Array.Empty<byte>(), "Wrapped key data is malformed.");
+
+                string cleanCred = credential.Trim();
+                if (cleanCred.StartsWith("VRTX-", StringComparison.OrdinalIgnoreCase))
+                {
+                    cleanCred = cleanCred.Replace("-", "").ToUpperInvariant();
+                }
+
+                byte[] salt = new byte[SaltSizeBytes];
+                byte[] nonce = new byte[NonceSizeBytes];
+                byte[] tag = new byte[TagSizeBytes];
+                byte[] ciphertext = new byte[combined.Length - (SaltSizeBytes + NonceSizeBytes + TagSizeBytes)];
+
+                Buffer.BlockCopy(combined, 0, salt, 0, SaltSizeBytes);
+                Buffer.BlockCopy(combined, SaltSizeBytes, nonce, 0, NonceSizeBytes);
+                Buffer.BlockCopy(combined, SaltSizeBytes + NonceSizeBytes, tag, 0, TagSizeBytes);
+                Buffer.BlockCopy(combined, SaltSizeBytes + NonceSizeBytes + TagSizeBytes, ciphertext, 0, ciphertext.Length);
+
+                byte[] kek = DeriveKey(cleanCred, salt);
+                byte[] masterKey = new byte[ciphertext.Length];
+
+                using (var aesGcm = new AesGcm(kek, TagSizeBytes))
+                {
+                    aesGcm.Decrypt(nonce, ciphertext, tag, masterKey, MagicHeader);
+                }
+
+                return (true, masterKey, string.Empty);
+            }
+            catch (CryptographicException)
+            {
+                return (false, Array.Empty<byte>(), "Authentication failed. Incorrect credential.");
+            }
+            catch (Exception ex)
+            {
+                return (false, Array.Empty<byte>(), ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Encrypts an entire directory into an authenticated AES-256-GCM container file using a Vault Master Key.
+        /// </summary>
+        public (bool success, string error, long totalBytes, int fileCount) EncryptDirectoryWithKey(
+            string sourceDirectory, string destinationVaultFile, byte[] masterKey)
         {
             try
             {
                 if (!Directory.Exists(sourceDirectory))
                     return (false, "Source directory does not exist.", 0, 0);
+
+                if (masterKey == null || masterKey.Length != KeySizeBytes)
+                    return (false, "Invalid Vault Master Key.", 0, 0);
 
                 var dirInfo = new DirectoryInfo(sourceDirectory);
                 var allFiles = dirInfo.GetFiles("*", SearchOption.AllDirectories);
@@ -129,20 +225,18 @@ namespace Vortex.Core.Vault
                     ZipFile.CreateFromDirectory(sourceDirectory, tempZip, CompressionLevel.Fastest, false);
                     byte[] zipBytes = File.ReadAllBytes(tempZip);
 
-                    // 2. Derive key with a fresh random 32-byte salt
                     byte[] salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
-                    byte[] key = DeriveKey(password, salt);
                     byte[] nonce = RandomNumberGenerator.GetBytes(NonceSizeBytes);
                     byte[] tag = new byte[TagSizeBytes];
                     byte[] ciphertext = new byte[zipBytes.Length];
 
-                    // 3. Encrypt payload with AES-256-GCM
-                    using (var aesGcm = new AesGcm(key, TagSizeBytes))
+                    // 2. Encrypt payload with AES-256-GCM using direct VMK
+                    using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
                     {
                         aesGcm.Encrypt(nonce, zipBytes, ciphertext, tag, MagicHeader);
                     }
 
-                    // 4. Write atomic container: [MagicHeader(13)] [Salt(32)] [Nonce(12)] [Tag(16)] [Ciphertext(N)]
+                    // 3. Write atomic container: [MagicHeader(13)] [Salt(32)] [Nonce(12)] [Tag(16)] [Ciphertext(N)]
                     string tempOut = destinationVaultFile + ".tmp";
                     using (var fs = new FileStream(tempOut, FileMode.Create, FileAccess.Write, FileShare.None))
                     using (var bw = new BinaryWriter(fs))
@@ -171,7 +265,85 @@ namespace Vortex.Core.Vault
         }
 
         /// <summary>
-        /// Decrypts a Vortex Encrypted Container file and restores directory contents.
+        /// Decrypts a Vortex Encrypted Container file using a Vault Master Key.
+        /// </summary>
+        public (bool success, string error) DecryptVaultWithKey(
+            string vaultFile, string targetDirectory, byte[] masterKey)
+        {
+            try
+            {
+                if (!File.Exists(vaultFile))
+                    return (false, "Vault container file was not found.");
+
+                if (masterKey == null || masterKey.Length != KeySizeBytes)
+                    return (false, "Invalid Vault Master Key.");
+
+                byte[] fileBytes = File.ReadAllBytes(vaultFile);
+                if (fileBytes.Length < MagicHeader.Length + SaltSizeBytes + NonceSizeBytes + TagSizeBytes)
+                    return (false, "Corrupt or invalid vault container format.");
+
+                using var ms = new MemoryStream(fileBytes);
+                using var br = new BinaryReader(ms);
+
+                byte[] header = br.ReadBytes(MagicHeader.Length);
+                if (!CryptographicOperations.FixedTimeEquals(header, MagicHeader))
+                    return (false, "Invalid vault header. This file is not a valid Vortex container.");
+
+                byte[] salt = br.ReadBytes(SaltSizeBytes);
+                byte[] nonce = br.ReadBytes(NonceSizeBytes);
+                byte[] tag = br.ReadBytes(TagSizeBytes);
+                byte[] ciphertext = br.ReadBytes((int)(ms.Length - ms.Position));
+
+                byte[] plaintextZip = new byte[ciphertext.Length];
+
+                try
+                {
+                    using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
+                    {
+                        aesGcm.Decrypt(nonce, ciphertext, tag, plaintextZip, MagicHeader);
+                    }
+                }
+                catch (CryptographicException)
+                {
+                    return (false, "Incorrect Master Password or authentication failed. Access Denied.");
+                }
+
+                // Unpack zip safely into target directory
+                string tempZip = Path.Combine(Path.GetTempPath(), $"vrtx_restore_{Guid.NewGuid():N}.zip");
+                try
+                {
+                    File.WriteAllBytes(tempZip, plaintextZip);
+
+                    if (!Directory.Exists(targetDirectory))
+                        Directory.CreateDirectory(targetDirectory);
+
+                    ZipFile.ExtractToDirectory(tempZip, targetDirectory, overwriteFiles: true);
+                    return (true, string.Empty);
+                }
+                finally
+                {
+                    if (File.Exists(tempZip)) File.Delete(tempZip);
+                }
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Legacy fallback: Encrypts a directory with direct password derivation.
+        /// </summary>
+        public (bool success, string error, long totalBytes, int fileCount) EncryptDirectoryToVault(
+            string sourceDirectory, string destinationVaultFile, string password)
+        {
+            byte[] salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
+            byte[] key = DeriveKey(password, salt);
+            return EncryptDirectoryWithKey(sourceDirectory, destinationVaultFile, key);
+        }
+
+        /// <summary>
+        /// Legacy fallback: Decrypts a directory trying direct password derivation.
         /// </summary>
         public (bool success, string error) DecryptVaultToDirectory(
             string vaultFile, string targetDirectory, string password)
@@ -197,7 +369,7 @@ namespace Vortex.Core.Vault
                 byte[] tag = br.ReadBytes(TagSizeBytes);
                 byte[] ciphertext = br.ReadBytes((int)(ms.Length - ms.Position));
 
-                // Derive key and decrypt
+                // Try direct derivation from salt
                 byte[] key = DeriveKey(password, salt);
                 byte[] plaintextZip = new byte[ciphertext.Length];
 
@@ -213,7 +385,6 @@ namespace Vortex.Core.Vault
                     return (false, "Incorrect Master Password or authentication failed. Access Denied.");
                 }
 
-                // Unpack zip safely into target directory
                 string tempZip = Path.Combine(Path.GetTempPath(), $"vrtx_restore_{Guid.NewGuid():N}.zip");
                 try
                 {

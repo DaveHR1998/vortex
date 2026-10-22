@@ -24,6 +24,11 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A69EB0" />
     <SolidColorBrush x:Key="TextMutedBrush" Color="#71697C" />
 
+    <!-- Legacy / Installer Aliases -->
+    <SolidColorBrush x:Key="BgCardBrush" Color="#EA201A26" />
+    <SolidColorBrush x:Key="BorderDarkBrush" Color="#60554666" />
+    <SolidColorBrush x:Key="AccentCyanBrush" Color="#00E599" />
+
     <!-- Typography Styles -->
     <Style x:Key="TitleHeaderStyle" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
@@ -276,6 +281,16 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Installer & Package Manager Aliases -->
+    <Style x:Key="PrimaryInstallButton" TargetType="Button" BasedOn="{StaticResource VortexPrimaryButton}" />
+    <Style x:Key="SecondaryInstallButton" TargetType="Button" BasedOn="{StaticResource VortexSecondaryButton}" />
+    <Style x:Key="InstallerCheckBox" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
     <!-- Modern Filter Chip / Pill RadioButton -->

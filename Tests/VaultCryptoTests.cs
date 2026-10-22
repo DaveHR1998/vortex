@@ -12,6 +12,7 @@ namespace Vortex.Tests
         {
             Test_PasswordHashingAndVerification();
             Test_RecoveryKeyGenerationAndVerification();
+            Test_EnvelopeEncryption_KeyWrapping_And_PasswordChange();
             Test_DirectoryEncryptionAndDecryption_Success();
             Test_DecryptionWithInvalidPassword_ThrowsException();
         }
@@ -60,6 +61,42 @@ namespace Vortex.Tests
             TestRunner.Pass("VaultCrypto: 24-char Emergency Recovery Key Format & SHA-256 Validation");
         }
 
+        private static void Test_EnvelopeEncryption_KeyWrapping_And_PasswordChange()
+        {
+            var crypto = new VaultCryptoEngine();
+            byte[] vmk = crypto.GenerateVaultMasterKey();
+
+            string password = "InitialMasterPassword123!";
+            string recoveryKey = "VRTX-ABCD-EFGH-JKLM-NPQR-STUV";
+
+            // 1. Wrap VMK with Password and Recovery Key
+            string wrappedPass = crypto.WrapMasterKey(vmk, password);
+            string wrappedRec = crypto.WrapMasterKey(vmk, recoveryKey);
+
+            if (string.IsNullOrEmpty(wrappedPass) || string.IsNullOrEmpty(wrappedRec))
+                throw new Exception("Key wrapping returned empty string.");
+
+            // 2. Unwrap with Password
+            var (passSuccess, passUnwrappedKey, passErr) = crypto.UnwrapMasterKey(wrappedPass, password);
+            if (!passSuccess || !CryptographicOperations.FixedTimeEquals(vmk, passUnwrappedKey))
+                throw new Exception($"UnwrapMasterKey with password failed: {passErr}");
+
+            // 3. Unwrap with Recovery Key
+            var (recSuccess, recUnwrappedKey, recErr) = crypto.UnwrapMasterKey(wrappedRec, recoveryKey);
+            if (!recSuccess || !CryptographicOperations.FixedTimeEquals(vmk, recUnwrappedKey))
+                throw new Exception($"UnwrapMasterKey with recovery key failed: {recErr}");
+
+            // 4. Test Password Change / Re-wrap without changing the underlying VMK
+            string newPassword = "BrandNewMasterPassword999#";
+            string rewrappedPass = crypto.WrapMasterKey(recUnwrappedKey, newPassword);
+
+            var (newPassSuccess, newUnwrappedKey, _) = crypto.UnwrapMasterKey(rewrappedPass, newPassword);
+            if (!newPassSuccess || !CryptographicOperations.FixedTimeEquals(vmk, newUnwrappedKey))
+                throw new Exception("Unwrapping with new password after re-wrapping failed.");
+
+            TestRunner.Pass("VaultCrypto: 256-bit VMK Envelope Encryption & Dual Key Unwrapping");
+        }
+
         private static void Test_DirectoryEncryptionAndDecryption_Success()
         {
             var crypto = new VaultCryptoEngine();
@@ -69,7 +106,8 @@ namespace Vortex.Tests
 
             string file1 = Path.Combine(tempDir, "doc1.txt");
             string file2 = Path.Combine(subDir, "data.bin");
-            string password = "StrongTestEncryptionPassword99@";
+
+            byte[] vmk = crypto.GenerateVaultMasterKey();
 
             string content1 = "Top Secret Vortex Document Content. Confidential!";
             byte[] content2 = new byte[8192];
@@ -85,10 +123,10 @@ namespace Vortex.Tests
 
             try
             {
-                // Encrypt
-                var (encSuccess, encErr, totalBytes, fileCount) = crypto.EncryptDirectoryToVault(tempDir, vaultFile, password);
+                // Encrypt with VMK
+                var (encSuccess, encErr, totalBytes, fileCount) = crypto.EncryptDirectoryWithKey(tempDir, vaultFile, vmk);
                 if (!encSuccess)
-                    throw new Exception($"EncryptDirectoryToVault failed: {encErr}");
+                    throw new Exception($"EncryptDirectoryWithKey failed: {encErr}");
 
                 if (fileCount != 2)
                     throw new Exception($"Expected 2 files packaged, got {fileCount}");
@@ -96,13 +134,13 @@ namespace Vortex.Tests
                 if (!File.Exists(vaultFile))
                     throw new Exception("Vault file was not created on disk.");
 
-                if (Directory.Exists(tempDir))
-                    throw new Exception("Source directory should be deleted after successful encryption.");
+                // Wipe source directory to simulate clean lock state before testing restoration
+                Directory.Delete(tempDir, true);
 
-                // Decrypt
-                var (decSuccess, decErr) = crypto.DecryptVaultToDirectory(vaultFile, tempDir, password);
+                // Decrypt with VMK
+                var (decSuccess, decErr) = crypto.DecryptVaultWithKey(vaultFile, tempDir, vmk);
                 if (!decSuccess)
-                    throw new Exception($"DecryptVaultToDirectory failed: {decErr}");
+                    throw new Exception($"DecryptVaultWithKey failed: {decErr}");
 
                 if (!Directory.Exists(tempDir) || !File.Exists(file1) || !File.Exists(file2))
                     throw new Exception("Restored files/directory missing after decryption.");
@@ -116,7 +154,7 @@ namespace Vortex.Tests
                 if (!CryptographicOperations.FixedTimeEquals(expectedHash2, restoredHash2))
                     throw new Exception("Restored file2 hash does not match original.");
 
-                TestRunner.Pass("VaultCrypto: AES-256-GCM Directory Archive Encryption & Decryption Cycle");
+                TestRunner.Pass("VaultCrypto: AES-256-GCM Direct VMK Directory Archive Encryption & Decryption Cycle");
             }
             finally
             {

@@ -119,6 +119,8 @@ namespace Vortex.Core.Database
                     PasswordHash TEXT,
                     PasswordSalt TEXT,
                     RecoveryKeyHash TEXT,
+                    WrappedMasterKeyPassword TEXT,
+                    WrappedMasterKeyRecovery TEXT,
                     AutoLockOnScreenLock INTEGER,
                     AutoLockIdleMinutes INTEGER,
                     UsbWriteBlockEnabled INTEGER,
@@ -127,6 +129,23 @@ namespace Vortex.Core.Database
                 );
             ";
             cmd.ExecuteNonQuery();
+
+            // Migration: Ensure wrapped master key columns exist in legacy databases
+            try
+            {
+                using var migCmd = conn.CreateCommand();
+                migCmd.CommandText = "ALTER TABLE VaultSettings ADD COLUMN WrappedMasterKeyPassword TEXT";
+                migCmd.ExecuteNonQuery();
+            }
+            catch { }
+
+            try
+            {
+                using var migCmd = conn.CreateCommand();
+                migCmd.CommandText = "ALTER TABLE VaultSettings ADD COLUMN WrappedMasterKeyRecovery TEXT";
+                migCmd.ExecuteNonQuery();
+            }
+            catch { }
 
             SeedProcessKnowledge(conn);
             SeedFolderFingerprints(conn);
@@ -576,7 +595,7 @@ namespace Vortex.Core.Database
             {
                 using var conn = GetConnection();
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT IsSetup, PasswordHash, PasswordSalt, RecoveryKeyHash, AutoLockOnScreenLock, AutoLockIdleMinutes, UsbWriteBlockEnabled, UsbAllowedUntil, ShellContextMenuEnabled FROM VaultSettings WHERE Id = 1";
+                cmd.CommandText = "SELECT IsSetup, PasswordHash, PasswordSalt, RecoveryKeyHash, AutoLockOnScreenLock, AutoLockIdleMinutes, UsbWriteBlockEnabled, UsbAllowedUntil, ShellContextMenuEnabled, WrappedMasterKeyPassword, WrappedMasterKeyRecovery FROM VaultSettings WHERE Id = 1";
                 using var reader = cmd.ExecuteReader();
                 if (reader.Read())
                 {
@@ -590,7 +609,9 @@ namespace Vortex.Core.Database
                         AutoLockIdleMinutes = reader.GetInt32(5),
                         UsbWriteBlockEnabled = reader.GetInt32(6) == 1,
                         UsbAllowedUntil = reader.IsDBNull(7) ? null : (DateTime.TryParse(reader.GetString(7), out var udt) ? udt : null),
-                        ShellContextMenuEnabled = reader.GetInt32(8) == 1
+                        ShellContextMenuEnabled = reader.GetInt32(8) == 1,
+                        WrappedMasterKeyPassword = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
+                        WrappedMasterKeyRecovery = reader.IsDBNull(10) ? string.Empty : reader.GetString(10)
                     };
                 }
             }
@@ -605,13 +626,15 @@ namespace Vortex.Core.Database
                 using var conn = GetConnection();
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = @"
-                    INSERT INTO VaultSettings (Id, IsSetup, PasswordHash, PasswordSalt, RecoveryKeyHash, AutoLockOnScreenLock, AutoLockIdleMinutes, UsbWriteBlockEnabled, UsbAllowedUntil, ShellContextMenuEnabled)
-                    VALUES (1, $setup, $pass, $salt, $rec, $screen, $idle, $usb, $usbtime, $shell)
+                    INSERT INTO VaultSettings (Id, IsSetup, PasswordHash, PasswordSalt, RecoveryKeyHash, WrappedMasterKeyPassword, WrappedMasterKeyRecovery, AutoLockOnScreenLock, AutoLockIdleMinutes, UsbWriteBlockEnabled, UsbAllowedUntil, ShellContextMenuEnabled)
+                    VALUES (1, $setup, $pass, $salt, $rec, $wrapPass, $wrapRec, $screen, $idle, $usb, $usbtime, $shell)
                     ON CONFLICT(Id) DO UPDATE SET
                         IsSetup = $setup,
                         PasswordHash = $pass,
                         PasswordSalt = $salt,
                         RecoveryKeyHash = $rec,
+                        WrappedMasterKeyPassword = $wrapPass,
+                        WrappedMasterKeyRecovery = $wrapRec,
                         AutoLockOnScreenLock = $screen,
                         AutoLockIdleMinutes = $idle,
                         UsbWriteBlockEnabled = $usb,
@@ -622,6 +645,8 @@ namespace Vortex.Core.Database
                 cmd.Parameters.AddWithValue("$pass", settings.PasswordHash ?? string.Empty);
                 cmd.Parameters.AddWithValue("$salt", settings.PasswordSalt ?? string.Empty);
                 cmd.Parameters.AddWithValue("$rec", settings.RecoveryKeyHash ?? string.Empty);
+                cmd.Parameters.AddWithValue("$wrapPass", settings.WrappedMasterKeyPassword ?? string.Empty);
+                cmd.Parameters.AddWithValue("$wrapRec", settings.WrappedMasterKeyRecovery ?? string.Empty);
                 cmd.Parameters.AddWithValue("$screen", settings.AutoLockOnScreenLock ? 1 : 0);
                 cmd.Parameters.AddWithValue("$idle", settings.AutoLockIdleMinutes);
                 cmd.Parameters.AddWithValue("$usb", settings.UsbWriteBlockEnabled ? 1 : 0);
