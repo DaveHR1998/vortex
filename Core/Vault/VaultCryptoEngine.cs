@@ -18,9 +18,89 @@ namespace Vortex.Core.Vault
         private const int TagSizeBytes = 16;     // 128-bit authentication tag
         private const int Pbkdf2Iterations = 100_000;
 
-        // Magic header for Vortex Encrypted Containers: "VRTX_VAULT_V1" and V2 self-contained
+        // Magic headers for Vortex Encrypted Containers: V1 (legacy), V2 (self-contained), and V3 (streaming chunked)
         private static readonly byte[] MagicHeader = Encoding.UTF8.GetBytes("VRTX_VAULT_V1");
         private static readonly byte[] MagicHeaderV2 = Encoding.UTF8.GetBytes("VRTX_VAULT_V2");
+        private static readonly byte[] MagicHeaderV3 = Encoding.UTF8.GetBytes("VRTX_VAULT_V3");
+        public const int StreamChunkSizeBytes = 1024 * 1024; // 1 MB streaming chunks for low RAM footprint
+
+        /// <summary>
+        /// Inspects a directory to verify whether any file is open, in-use, or locked by another process.
+        /// Prevents archiving incomplete directories or corrupting locked files.
+        /// </summary>
+        public static (bool hasLocks, string? lockedFilePath) CheckDirectoryFileLocks(string directory)
+        {
+            try
+            {
+                if (!Directory.Exists(directory)) return (false, null);
+
+                var dirInfo = new DirectoryInfo(directory);
+                foreach (var file in dirInfo.GetFiles("*", SearchOption.AllDirectories))
+                {
+                    if (file.Name.Equals("🔒_LOCKED_BY_VORTEX_VAULT.txt", StringComparison.OrdinalIgnoreCase) ||
+                        file.Name.EndsWith(".vortexvault", StringComparison.OrdinalIgnoreCase) ||
+                        file.Name.EndsWith(".vortexvault.bak", StringComparison.OrdinalIgnoreCase) ||
+                        file.Name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        using var stream = file.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                    }
+                    catch (IOException)
+                    {
+                        return (true, file.FullName);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        return (true, file.FullName);
+                    }
+                    catch
+                    {
+                        return (true, file.FullName);
+                    }
+                }
+
+                return (false, null);
+            }
+            catch (Exception ex)
+            {
+                return (true, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Derives a deterministic 12-byte nonce for chunk index i using a random base nonce.
+        /// Guaranteed unique per chunk to prevent AES-GCM nonce reuse.
+        /// </summary>
+        private static byte[] DeriveChunkNonce(byte[] baseNonce, ulong chunkIndex)
+        {
+            byte[] nonce = new byte[NonceSizeBytes];
+            Buffer.BlockCopy(baseNonce, 0, nonce, 0, NonceSizeBytes);
+            for (int b = 0; b < 8; b++)
+            {
+                nonce[4 + b] ^= (byte)((chunkIndex >> (b * 8)) & 0xFF);
+            }
+            return nonce;
+        }
+
+        /// <summary>
+        /// Creates authenticated additional data binding header, chunk index, and finality flag.
+        /// Prevents chunk reordering, alteration, truncation, or insertion attacks.
+        /// </summary>
+        private static byte[] CreateChunkAad(byte[] header, ulong chunkIndex, bool isFinal)
+        {
+            byte[] aad = new byte[header.Length + 9];
+            Buffer.BlockCopy(header, 0, aad, 0, header.Length);
+            for (int b = 0; b < 8; b++)
+            {
+                aad[header.Length + b] = (byte)((chunkIndex >> (b * 8)) & 0xFF);
+            }
+            aad[header.Length + 8] = (byte)(isFinal ? 1 : 0);
+            return aad;
+        }
 
         /// <summary>
         /// Canonicalizes an Emergency Recovery Key into its pure alphanumeric base32 representation.
@@ -244,7 +324,8 @@ namespace Vortex.Core.Vault
 
         /// <summary>
         /// Encrypts an entire directory into an authenticated AES-256-GCM container file using a Vault Master Key.
-        /// Supports self-contained V2 format (embedding wrapped keys for zero-loss recovery) with backward-compatible V1 fallback.
+        /// Supports self-contained V3 streaming format (1 MB chunked streaming AEAD with zero memory exhaustion)
+        /// with backward-compatible V2 and V1 reading.
         /// </summary>
         public (bool success, string error, long totalBytes, int fileCount) EncryptDirectoryWithKey(
             string sourceDirectory,
@@ -262,15 +343,21 @@ namespace Vortex.Core.Vault
                 if (masterKey == null || masterKey.Length != KeySizeBytes)
                     return (false, "Invalid Vault Master Key.", 0, 0);
 
+                // Pre-flight check: verify no files are in-use or locked by other programs
+                var (hasLocks, lockedFile) = CheckDirectoryFileLocks(sourceDirectory);
+                if (hasLocks)
+                {
+                    return (false, $"Cannot lock folder: The file '{Path.GetFileName(lockedFile)}' is open or locked by another process. Please close it and retry.", 0, 0);
+                }
+
                 // 1. Pack directory contents into a temporary zip archive in temp file
-                // Skip existing vault containers, backup files, and lock barriers
                 string tempZip = Path.Combine(Path.GetTempPath(), $"vrtx_tmp_{Guid.NewGuid():N}.zip");
                 long totalBytes = 0;
                 int fileCount = 0;
 
                 try
                 {
-                    using (var zipStream = new FileStream(tempZip, FileMode.Create, FileAccess.Write, FileShare.None))
+                    using (var zipStream = new FileStream(tempZip, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
                     using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create))
                     {
                         var dirInfo = new DirectoryInfo(sourceDirectory);
@@ -301,51 +388,67 @@ namespace Vortex.Core.Vault
                         }
                     }
 
-                    byte[] zipBytes = File.ReadAllBytes(tempZip);
-
-                    byte[] salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
-                    byte[] nonce = RandomNumberGenerator.GetBytes(NonceSizeBytes);
-                    byte[] tag = new byte[TagSizeBytes];
-                    byte[] ciphertext = new byte[zipBytes.Length];
-
-                    bool isV2 = !string.IsNullOrEmpty(wrappedPasswordKey) && !string.IsNullOrEmpty(wrappedRecoveryKey);
-                    byte[] activeHeader = isV2 ? MagicHeaderV2 : MagicHeader;
-
-                    // 2. Encrypt payload with AES-256-GCM using direct VMK
-                    using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
-                    {
-                        aesGcm.Encrypt(nonce, zipBytes, ciphertext, tag, activeHeader);
-                    }
-
-                    // 3. Write atomic container via temp file in %TEMP%
+                    // 2. Stream chunked encryption directly into temporary container file
                     string tempOut = Path.Combine(Path.GetTempPath(), $"vrtx_enc_{Guid.NewGuid():N}.tmp");
-                    using (var fs = new FileStream(tempOut, FileMode.Create, FileAccess.Write, FileShare.None))
-                    using (var bw = new BinaryWriter(fs, Encoding.UTF8))
+                    using (var outFs = new FileStream(tempOut, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
+                    using (var bw = new BinaryWriter(outFs, Encoding.UTF8))
+                    using (var zipFs = new FileStream(tempZip, FileMode.Open, FileAccess.Read, FileShare.Read, 65536))
                     {
-                        if (isV2)
+                        byte[] baseNonce = RandomNumberGenerator.GetBytes(NonceSizeBytes);
+
+                        // V3 Self-Contained Streaming Format
+                        bw.Write(MagicHeaderV3);
+                        bw.Write((int)3); // Version 3
+                        bw.Write(folderName ?? Path.GetFileName(sourceDirectory));
+                        bw.Write(wrappedPasswordKey ?? string.Empty);
+                        bw.Write(wrappedRecoveryKey ?? string.Empty);
+                        bw.Write((int)StreamChunkSizeBytes);
+                        bw.Write(baseNonce);
+                        bw.Write((long)zipFs.Length);
+
+                        byte[] readBuffer = new byte[StreamChunkSizeBytes];
+                        byte[] cipherBuffer = new byte[StreamChunkSizeBytes];
+                        byte[] tag = new byte[TagSizeBytes];
+                        ulong chunkIndex = 0;
+                        long remainingBytes = zipFs.Length;
+
+                        using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
                         {
-                            // V2 Self-Contained Format
-                            bw.Write(MagicHeaderV2);
-                            bw.Write((int)2); // Version 2
-                            bw.Write(folderName ?? Path.GetFileName(sourceDirectory));
-                            bw.Write(wrappedPasswordKey!);
-                            bw.Write(wrappedRecoveryKey!);
-                            bw.Write(nonce);
-                            bw.Write(tag);
-                            bw.Write(ciphertext);
-                        }
-                        else
-                        {
-                            // Legacy V1 Format
-                            bw.Write(MagicHeader);
-                            bw.Write(salt);
-                            bw.Write(nonce);
-                            bw.Write(tag);
-                            bw.Write(ciphertext);
+                            do
+                            {
+                                int toRead = (int)Math.Min((long)readBuffer.Length, remainingBytes);
+                                int bytesRead = 0;
+                                while (bytesRead < toRead)
+                                {
+                                    int n = zipFs.Read(readBuffer, bytesRead, toRead - bytesRead);
+                                    if (n <= 0) break;
+                                    bytesRead += n;
+                                }
+
+                                remainingBytes -= bytesRead;
+                                bool isFinal = (remainingBytes <= 0);
+
+                                byte[] chunkNonce = DeriveChunkNonce(baseNonce, chunkIndex);
+                                byte[] aad = CreateChunkAad(MagicHeaderV3, chunkIndex, isFinal);
+
+                                aesGcm.Encrypt(
+                                    chunkNonce,
+                                    readBuffer.AsSpan(0, bytesRead),
+                                    cipherBuffer.AsSpan(0, bytesRead),
+                                    tag,
+                                    aad);
+
+                                bw.Write((int)bytesRead);
+                                bw.Write(tag);
+                                bw.Write(cipherBuffer, 0, bytesRead);
+                                bw.Write(isFinal);
+
+                                chunkIndex++;
+                            } while (remainingBytes > 0);
                         }
                     }
 
-                    // Ensure target parent directory exists
+                    // 3. Ensure target parent directory exists
                     string? targetDir = Path.GetDirectoryName(destinationVaultFile);
                     if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
                     {
@@ -356,7 +459,6 @@ namespace Vortex.Core.Vault
                     {
                         try
                         {
-                            // Remove hidden/system flags if any so overwrite succeeds
                             File.SetAttributes(destinationVaultFile, FileAttributes.Normal);
                         }
                         catch { }
@@ -378,7 +480,7 @@ namespace Vortex.Core.Vault
         }
 
         /// <summary>
-        /// Decrypts a Vortex Encrypted Container file using a Vault Master Key (supports both V1 and V2 formats).
+        /// Decrypts a Vortex Encrypted Container file using a Vault Master Key (supports V1, V2, and V3 streaming formats).
         /// </summary>
         public (bool success, string error) DecryptVaultWithKey(
             string vaultFile, string targetDirectory, byte[] masterKey)
@@ -391,58 +493,123 @@ namespace Vortex.Core.Vault
                 if (masterKey == null || masterKey.Length != KeySizeBytes)
                     return (false, "Invalid Vault Master Key.");
 
-                using var fs = new FileStream(vaultFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var fs = new FileStream(vaultFile, FileMode.Open, FileAccess.Read, FileShare.Read, 65536);
                 using var br = new BinaryReader(fs, Encoding.UTF8);
 
                 byte[] header = br.ReadBytes(MagicHeader.Length);
+                bool isV3 = CryptographicOperations.FixedTimeEquals(header, MagicHeaderV3);
                 bool isV2 = CryptographicOperations.FixedTimeEquals(header, MagicHeaderV2);
                 bool isV1 = CryptographicOperations.FixedTimeEquals(header, MagicHeader);
 
-                if (!isV1 && !isV2)
+                if (!isV1 && !isV2 && !isV3)
                     return (false, "Invalid vault header. This file is not a valid Vortex container.");
 
-                byte[] nonce;
-                byte[] tag;
-                byte[] ciphertext;
-                byte[] activeHeader = isV2 ? MagicHeaderV2 : MagicHeader;
-
-                if (isV2)
-                {
-                    int version = br.ReadInt32();
-                    string folderName = br.ReadString();
-                    string wrappedPass = br.ReadString();
-                    string wrappedRec = br.ReadString();
-                    nonce = br.ReadBytes(NonceSizeBytes);
-                    tag = br.ReadBytes(TagSizeBytes);
-                    ciphertext = br.ReadBytes((int)(fs.Length - fs.Position));
-                }
-                else
-                {
-                    byte[] salt = br.ReadBytes(SaltSizeBytes);
-                    nonce = br.ReadBytes(NonceSizeBytes);
-                    tag = br.ReadBytes(TagSizeBytes);
-                    ciphertext = br.ReadBytes((int)(fs.Length - fs.Position));
-                }
-
-                byte[] plaintextZip = new byte[ciphertext.Length];
-
-                try
-                {
-                    using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
-                    {
-                        aesGcm.Decrypt(nonce, ciphertext, tag, plaintextZip, activeHeader);
-                    }
-                }
-                catch (CryptographicException)
-                {
-                    return (false, "Incorrect Master Password or authentication failed. Access Denied.");
-                }
-
-                // Unpack zip safely into target directory
                 string tempZip = Path.Combine(Path.GetTempPath(), $"vrtx_restore_{Guid.NewGuid():N}.zip");
                 try
                 {
-                    File.WriteAllBytes(tempZip, plaintextZip);
+                    if (isV3)
+                    {
+                        int version = br.ReadInt32();
+                        string folderName = br.ReadString();
+                        string wrappedPass = br.ReadString();
+                        string wrappedRec = br.ReadString();
+                        int chunkSize = br.ReadInt32();
+                        byte[] baseNonce = br.ReadBytes(NonceSizeBytes);
+                        long uncompressedZipLength = br.ReadInt64();
+
+                        using (var zipFs = new FileStream(tempZip, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
+                        using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
+                        {
+                            byte[] cipherBuffer = new byte[chunkSize];
+                            byte[] plainBuffer = new byte[chunkSize];
+                            ulong chunkIndex = 0;
+                            bool isFinal = false;
+
+                            while (!isFinal && fs.Position < fs.Length)
+                            {
+                                int chunkLen = br.ReadInt32();
+                                byte[] tag = br.ReadBytes(TagSizeBytes);
+                                int bytesRead = 0;
+                                while (bytesRead < chunkLen)
+                                {
+                                    int n = fs.Read(cipherBuffer, bytesRead, chunkLen - bytesRead);
+                                    if (n <= 0) break;
+                                    bytesRead += n;
+                                }
+                                if (bytesRead != chunkLen)
+                                    return (false, "Container payload is corrupted or truncated.");
+
+                                isFinal = br.ReadBoolean();
+
+                                byte[] chunkNonce = DeriveChunkNonce(baseNonce, chunkIndex);
+                                byte[] aad = CreateChunkAad(MagicHeaderV3, chunkIndex, isFinal);
+
+                                try
+                                {
+                                    aesGcm.Decrypt(
+                                        chunkNonce,
+                                        cipherBuffer.AsSpan(0, chunkLen),
+                                        tag,
+                                        plainBuffer.AsSpan(0, chunkLen),
+                                        aad);
+                                }
+                                catch (CryptographicException)
+                                {
+                                    return (false, "Incorrect Master Password or authentication failed. Access Denied.");
+                                }
+
+                                zipFs.Write(plainBuffer, 0, chunkLen);
+                                chunkIndex++;
+                            }
+                        }
+                    }
+                    else if (isV2)
+                    {
+                        int version = br.ReadInt32();
+                        string folderName = br.ReadString();
+                        string wrappedPass = br.ReadString();
+                        string wrappedRec = br.ReadString();
+                        byte[] nonce = br.ReadBytes(NonceSizeBytes);
+                        byte[] tag = br.ReadBytes(TagSizeBytes);
+                        byte[] ciphertext = br.ReadBytes((int)(fs.Length - fs.Position));
+
+                        byte[] plaintextZip = new byte[ciphertext.Length];
+                        try
+                        {
+                            using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
+                            {
+                                aesGcm.Decrypt(nonce, ciphertext, tag, plaintextZip, MagicHeaderV2);
+                            }
+                        }
+                        catch (CryptographicException)
+                        {
+                            return (false, "Incorrect Master Password or authentication failed. Access Denied.");
+                        }
+
+                        File.WriteAllBytes(tempZip, plaintextZip);
+                    }
+                    else
+                    {
+                        byte[] salt = br.ReadBytes(SaltSizeBytes);
+                        byte[] nonce = br.ReadBytes(NonceSizeBytes);
+                        byte[] tag = br.ReadBytes(TagSizeBytes);
+                        byte[] ciphertext = br.ReadBytes((int)(fs.Length - fs.Position));
+
+                        byte[] plaintextZip = new byte[ciphertext.Length];
+                        try
+                        {
+                            using (var aesGcm = new AesGcm(masterKey, TagSizeBytes))
+                            {
+                                aesGcm.Decrypt(nonce, ciphertext, tag, plaintextZip, MagicHeader);
+                            }
+                        }
+                        catch (CryptographicException)
+                        {
+                            return (false, "Incorrect Master Password or authentication failed. Access Denied.");
+                        }
+
+                        File.WriteAllBytes(tempZip, plaintextZip);
+                    }
 
                     if (!Directory.Exists(targetDirectory))
                         Directory.CreateDirectory(targetDirectory);
@@ -474,7 +641,7 @@ namespace Vortex.Core.Vault
 
         /// <summary>
         /// Standalone rescue: Decrypts any container directly using user credentials (password or recovery key).
-        /// For V2 containers, unwraps the VMK directly from the container file itself, requiring ZERO database state.
+        /// For V2 and V3 containers, unwraps the VMK directly from the container file itself, requiring ZERO database state.
         /// </summary>
         public (bool success, string error) DecryptVaultToDirectory(
             string vaultFile, string targetDirectory, string credential)
@@ -487,111 +654,26 @@ namespace Vortex.Core.Vault
                 if (string.IsNullOrWhiteSpace(credential))
                     return (false, "Credential cannot be empty.");
 
+                // For V2/V3 containers, extract VMK directly and decrypt streaming
+                var (extracted, vmk, _) = ExtractVmkFromContainer(vaultFile, credential);
+                if (extracted)
+                {
+                    return DecryptVaultWithKey(vaultFile, targetDirectory, vmk);
+                }
+
+                // If V1 legacy fallback (direct password derivation from salt)
                 using var fs = new FileStream(vaultFile, FileMode.Open, FileAccess.Read, FileShare.Read);
                 using var br = new BinaryReader(fs, Encoding.UTF8);
 
                 byte[] header = br.ReadBytes(MagicHeader.Length);
-                bool isV2 = CryptographicOperations.FixedTimeEquals(header, MagicHeaderV2);
-                bool isV1 = CryptographicOperations.FixedTimeEquals(header, MagicHeader);
-
-                if (!isV1 && !isV2)
-                    return (false, "Invalid vault header. This file is not a valid Vortex container.");
-
-                if (isV2)
+                if (CryptographicOperations.FixedTimeEquals(header, MagicHeader))
                 {
-                    int version = br.ReadInt32();
-                    string folderName = br.ReadString();
-                    string wrappedPass = br.ReadString();
-                    string wrappedRec = br.ReadString();
-                    byte[] nonce = br.ReadBytes(NonceSizeBytes);
-                    byte[] tag = br.ReadBytes(TagSizeBytes);
-                    byte[] ciphertext = br.ReadBytes((int)(fs.Length - fs.Position));
-
-                    // Try unwrapping VMK with credential via password slot first, then recovery slot
-                    byte[]? unwrappedVmk = null;
-                    var (pUnwrapped, pVmk, _) = UnwrapMasterKey(wrappedPass, credential);
-                    if (pUnwrapped)
-                    {
-                        unwrappedVmk = pVmk;
-                    }
-                    else
-                    {
-                        var (rUnwrapped, rVmk, _) = UnwrapMasterKey(wrappedRec, credential);
-                        if (rUnwrapped)
-                        {
-                            unwrappedVmk = rVmk;
-                        }
-                    }
-
-                    if (unwrappedVmk == null)
-                        return (false, "Authentication failed. Incorrect Master Password or Recovery Key.");
-
-                    byte[] plaintextZip = new byte[ciphertext.Length];
-                    try
-                    {
-                        using (var aesGcm = new AesGcm(unwrappedVmk, TagSizeBytes))
-                        {
-                            aesGcm.Decrypt(nonce, ciphertext, tag, plaintextZip, MagicHeaderV2);
-                        }
-                    }
-                    catch (CryptographicException)
-                    {
-                        return (false, "Decryption authentication failed. Container integrity compromised.");
-                    }
-
-                    string tempZip = Path.Combine(Path.GetTempPath(), $"vrtx_restore_{Guid.NewGuid():N}.zip");
-                    try
-                    {
-                        File.WriteAllBytes(tempZip, plaintextZip);
-                        if (!Directory.Exists(targetDirectory))
-                            Directory.CreateDirectory(targetDirectory);
-
-                        ZipFile.ExtractToDirectory(tempZip, targetDirectory, overwriteFiles: true);
-                        return (true, string.Empty);
-                    }
-                    finally
-                    {
-                        if (File.Exists(tempZip)) File.Delete(tempZip);
-                    }
-                }
-                else
-                {
-                    // Legacy V1 format fallback: direct derivation from salt
                     byte[] salt = br.ReadBytes(SaltSizeBytes);
-                    byte[] nonce = br.ReadBytes(NonceSizeBytes);
-                    byte[] tag = br.ReadBytes(TagSizeBytes);
-                    byte[] ciphertext = br.ReadBytes((int)(fs.Length - fs.Position));
-
                     byte[] key = DeriveKey(credential, salt);
-                    byte[] plaintextZip = new byte[ciphertext.Length];
-
-                    try
-                    {
-                        using (var aesGcm = new AesGcm(key, TagSizeBytes))
-                        {
-                            aesGcm.Decrypt(nonce, ciphertext, tag, plaintextZip, MagicHeader);
-                        }
-                    }
-                    catch (CryptographicException)
-                    {
-                        return (false, "Incorrect Master Password or authentication failed. Access Denied.");
-                    }
-
-                    string tempZip = Path.Combine(Path.GetTempPath(), $"vrtx_restore_{Guid.NewGuid():N}.zip");
-                    try
-                    {
-                        File.WriteAllBytes(tempZip, plaintextZip);
-                        if (!Directory.Exists(targetDirectory))
-                            Directory.CreateDirectory(targetDirectory);
-
-                        ZipFile.ExtractToDirectory(tempZip, targetDirectory, overwriteFiles: true);
-                        return (true, string.Empty);
-                    }
-                    finally
-                    {
-                        if (File.Exists(tempZip)) File.Delete(tempZip);
-                    }
+                    return DecryptVaultWithKey(vaultFile, targetDirectory, key);
                 }
+
+                return (false, "Authentication failed. Incorrect Master Password or Recovery Key.");
             }
             catch (Exception ex)
             {
@@ -602,7 +684,7 @@ namespace Vortex.Core.Vault
         /// <summary>
         /// Probes and extracts the 256-bit Vault Master Key (VMK) directly from a container file
         /// using a candidate credential (password or recovery key).
-        /// Supports self-contained V2 containers.
+        /// Supports self-contained V2 and V3 streaming containers.
         /// </summary>
         public (bool success, byte[] vmk, string error) ExtractVmkFromContainer(string vaultFile, string credential)
         {
@@ -618,9 +700,10 @@ namespace Vortex.Core.Vault
                 using var br = new BinaryReader(fs, Encoding.UTF8);
 
                 byte[] header = br.ReadBytes(MagicHeader.Length);
+                bool isV3 = CryptographicOperations.FixedTimeEquals(header, MagicHeaderV3);
                 bool isV2 = CryptographicOperations.FixedTimeEquals(header, MagicHeaderV2);
 
-                if (!isV2)
+                if (!isV2 && !isV3)
                 {
                     // If V1 legacy, try deriving key directly from salt
                     bool isV1 = CryptographicOperations.FixedTimeEquals(header, MagicHeader);

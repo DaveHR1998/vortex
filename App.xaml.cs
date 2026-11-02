@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -184,12 +186,24 @@ namespace Vortex
                 {
                     try
                     {
-                        using var server = new NamedPipeServerStream(
+                        var pipeSecurity = new PipeSecurity();
+                        var currentUser = WindowsIdentity.GetCurrent().User;
+                        if (currentUser != null)
+                        {
+                            pipeSecurity.AddAccessRule(new PipeAccessRule(currentUser, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+                        }
+                        var admins = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+                        pipeSecurity.AddAccessRule(new PipeAccessRule(admins, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+
+                        using var server = NamedPipeServerStreamAcl.Create(
                             IpcPipeName,
                             PipeDirection.In,
                             1,
                             PipeTransmissionMode.Byte,
-                            PipeOptions.Asynchronous);
+                            PipeOptions.Asynchronous,
+                            0,
+                            0,
+                            pipeSecurity);
 
                         await server.WaitForConnectionAsync();
 

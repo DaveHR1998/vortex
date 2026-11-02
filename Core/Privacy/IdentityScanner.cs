@@ -76,7 +76,7 @@ namespace Vortex.Core.Privacy
             var list = new List<IdentityFinding>();
             try
             {
-                var profilesOutput = RunCommand("netsh", "wlan show profiles");
+                var profilesOutput = RunCommand("netsh", "wlan", "show", "profiles");
                 foreach (var line in profilesOutput.Split('\n'))
                 {
                     if (!line.Contains(":")) continue;
@@ -86,7 +86,7 @@ namespace Vortex.Core.Privacy
                     if (string.IsNullOrWhiteSpace(ssid)) continue;
 
                     // Check if key content is accessible (exposed)
-                    var detail    = RunCommand("netsh", $"wlan show profile name=\"{ssid}\" key=clear");
+                    var detail    = RunCommand("netsh", "wlan", "show", "profile", $"name={ssid}", "key=clear");
                     bool hasKey   = detail.Contains("Key Content");
                     bool isOpen   = detail.Contains("Authentication      : Open");
 
@@ -306,17 +306,21 @@ namespace Vortex.Core.Privacy
 
         // ─── Helpers ──────────────────────────────────────────────────────────
 
-        private static string RunCommand(string exe, string args)
+        private static string RunCommand(string exe, params string[] args)
         {
             try
             {
-                var psi = new ProcessStartInfo(exe, args)
+                var psi = new ProcessStartInfo(exe)
                 {
                     RedirectStandardOutput = true,
                     UseShellExecute        = false,
                     CreateNoWindow         = true,
                     StandardOutputEncoding = Encoding.UTF8,
                 };
+                foreach (var arg in args)
+                {
+                    psi.ArgumentList.Add(arg);
+                }
                 using var p = Process.Start(psi);
                 if (p == null) return string.Empty;
                 string output = p.StandardOutput.ReadToEnd();

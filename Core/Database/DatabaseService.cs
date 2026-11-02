@@ -43,6 +43,16 @@ namespace Vortex.Core.Database
         private void InitializeDatabase()
         {
             using var conn = GetConnection();
+            using (var pragmaCmd = conn.CreateCommand())
+            {
+                pragmaCmd.CommandText = @"
+                    PRAGMA journal_mode = WAL;
+                    PRAGMA synchronous = NORMAL;
+                    PRAGMA busy_timeout = 5000;
+                ";
+                pragmaCmd.ExecuteNonQuery();
+            }
+
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 CREATE TABLE IF NOT EXISTS ProcessKnowledgeBase (

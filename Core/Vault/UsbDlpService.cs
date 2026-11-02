@@ -195,7 +195,7 @@ namespace Vortex.Core.Vault
             try
             {
                 var drives = DriveInfo.GetDrives()
-                    .Where(d => d.DriveType == DriveType.Removable || (d.DriveType == DriveType.Fixed && d.Name != Path.GetPathRoot(Environment.SystemDirectory)));
+                    .Where(d => d.DriveType == DriveType.Removable);
 
                 foreach (var d in drives)
                 {

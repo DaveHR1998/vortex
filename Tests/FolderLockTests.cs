@@ -15,6 +15,7 @@ namespace Vortex.Tests
             Test_RecoveryKey_Synchronization_And_Normalization();
             Test_SelfContained_V2_Standalone_Rescue_Without_DB();
             Test_LockAll_SessionKey_DataPreservation();
+            Test_LockAll_NullSession_NeverWipesUnsealedFiles();
             Test_InPlace_Container_Portability_And_Reimport();
             Test_PasswordChange_And_DesyncRecovery_Cycle();
         }
@@ -168,6 +169,58 @@ namespace Vortex.Tests
                 service.RemoveFromVault(userFolder, password);
 
                 TestRunner.Pass("FolderLock: LockAll Auto-Lock Active Session Re-Encryption & Data Preservation");
+            }
+            finally
+            {
+                if (Directory.Exists(userFolder)) try { Directory.Delete(userFolder, true); } catch { }
+                try { File.Delete(dbPath); } catch { }
+            }
+        }
+
+        private static void Test_LockAll_NullSession_NeverWipesUnsealedFiles()
+        {
+            string dbPath = Path.Combine(Path.GetTempPath(), "VortexTest_DB_NullSession_" + Guid.NewGuid().ToString("N") + ".db");
+            var db = new DatabaseService(dbPath);
+            var crypto = new VaultCryptoEngine();
+            var usb = new UsbDlpService(db);
+            var service1 = new FolderLockService(db, crypto, usb);
+
+            string password = "SessionPassword789!";
+            service1.SetupMasterSecurity(password);
+
+            string userFolder = Path.Combine(Path.GetTempPath(), "VortexNullSessionSrc_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(userFolder);
+
+            try
+            {
+                string file1 = Path.Combine(userFolder, "critical_doc.txt");
+                File.WriteAllText(file1, "Initial Content");
+                service1.ProtectFolder(userFolder, password, isStealth: false);
+
+                // Unlock folder
+                service1.UnlockFolder(userFolder, password, openInExplorer: false);
+
+                // User modifies file1 and adds file2
+                File.WriteAllText(file1, "Modified Document Content");
+                string file2 = Path.Combine(userFolder, "brand_new_file.txt");
+                File.WriteAllText(file2, "Crucial Brand New Proposal");
+
+                // Simulate app restart: instantiate a fresh FolderLockService with null session key
+                var service2 = new FolderLockService(db, crypto, usb);
+                if (service2.HasActiveSession)
+                    throw new Exception("Fresh service should NOT have an active cached VMK session!");
+
+                // Trigger LockAll with null session
+                service2.LockAllVaults("Idle Timeout with Null Session");
+
+                // CRITICAL ASSERTION: Files MUST NOT be deleted or wiped!
+                if (!File.Exists(file1) || File.ReadAllText(file1) != "Modified Document Content")
+                    throw new Exception("CRITICAL DATA LOSS BUG: Modified file was wiped when LockAll ran with null session key!");
+
+                if (!File.Exists(file2) || File.ReadAllText(file2) != "Crucial Brand New Proposal")
+                    throw new Exception("CRITICAL DATA LOSS BUG: Brand new unsealed file was wiped when LockAll ran with null session key!");
+
+                TestRunner.Pass("FolderLock: Zero-Data-Loss Guard (Null Session Key Never Wipes Unsealed Files)");
             }
             finally
             {

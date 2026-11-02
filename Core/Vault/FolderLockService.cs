@@ -92,7 +92,7 @@ namespace Vortex.Core.Vault
             {
                 // Active Windows Explorer Navigation Interceptor
                 // Detects when user double-clicks or navigates to a locked visible folder and prompts for password
-                _explorerWatchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(450) };
+                _explorerWatchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
                 _explorerWatchTimer.Tick += (s, e) => CheckExplorerNavigations();
                 _explorerWatchTimer.Start();
             }
@@ -109,75 +109,105 @@ namespace Vortex.Core.Vault
                 Type? shellType = Type.GetTypeFromProgID("Shell.Application");
                 if (shellType == null) return;
 
-                dynamic shell = Activator.CreateInstance(shellType)!;
-                dynamic windows = shell.Windows();
-                if (windows == null) return;
-
-                foreach (dynamic window in windows)
+                object? shell = null;
+                try
                 {
+                    shell = Activator.CreateInstance(shellType);
+                    if (shell == null) return;
+
+                    dynamic dynamicShell = shell;
+                    object? windowsObj = null;
                     try
                     {
-                        string? url = window.LocationURL;
-                        if (string.IsNullOrWhiteSpace(url) || !url.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
-                            continue;
+                        windowsObj = dynamicShell.Windows();
+                        if (windowsObj == null) return;
 
-                        string localPath = Uri.UnescapeDataString(new Uri(url).LocalPath).TrimEnd('\\');
-                        if (string.IsNullOrEmpty(localPath)) continue;
-
-                        var matchedVault = lockedVaults.FirstOrDefault(v =>
-                            localPath.Equals(v.FolderPath.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) ||
-                            localPath.StartsWith(v.FolderPath.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase));
-
-                        if (matchedVault != null)
+                        dynamic windows = windowsObj;
+                        foreach (dynamic window in windows)
                         {
-                            lock (_activelyPromptingFolders)
-                            {
-                                if (_activelyPromptingFolders.Contains(matchedVault.FolderPath))
-                                    continue;
-
-                                _activelyPromptingFolders.Add(matchedVault.FolderPath);
-                            }
-
-                            // Intercept: immediately close the Explorer window that attempted to view the locked container
                             try
                             {
-                                window.Quit();
-                            }
-                            catch
-                            {
-                                try
-                                {
-                                    string parentDir = Directory.GetParent(matchedVault.FolderPath)?.FullName ?? "shell:desktop";
-                                    window.Navigate(parentDir);
-                                }
-                                catch { }
-                            }
+                                string? url = window.LocationURL;
+                                if (string.IsNullOrWhiteSpace(url) || !url.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+                                    continue;
 
-                            // Prompt user for master password
-                            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                            {
-                                try
+                                string localPath = Uri.UnescapeDataString(new Uri(url).LocalPath).TrimEnd('\\');
+                                if (string.IsNullOrEmpty(localPath)) continue;
+
+                                var matchedVault = lockedVaults.FirstOrDefault(v =>
+                                    localPath.Equals(v.FolderPath.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) ||
+                                    localPath.StartsWith(v.FolderPath.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase));
+
+                                if (matchedVault != null)
                                 {
-                                    OnLockedFolderAccessed?.Invoke(matchedVault);
-                                }
-                                finally
-                                {
-                                    // Cooldown timer before allowing next auto-prompt for this folder
-                                    var cooldown = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-                                    cooldown.Tick += (cs, ce) =>
+                                    lock (_activelyPromptingFolders)
                                     {
-                                        cooldown.Stop();
-                                        lock (_activelyPromptingFolders)
+                                        if (_activelyPromptingFolders.Contains(matchedVault.FolderPath))
+                                            continue;
+
+                                        _activelyPromptingFolders.Add(matchedVault.FolderPath);
+                                    }
+
+                                    // Intercept: immediately close the Explorer window that attempted to view the locked container
+                                    try
+                                    {
+                                        window.Quit();
+                                    }
+                                    catch
+                                    {
+                                        try
                                         {
-                                            _activelyPromptingFolders.Remove(matchedVault.FolderPath);
+                                            string parentDir = Directory.GetParent(matchedVault.FolderPath)?.FullName ?? "shell:desktop";
+                                            window.Navigate(parentDir);
                                         }
-                                    };
-                                    cooldown.Start();
+                                        catch { }
+                                    }
+
+                                    // Prompt user for master password
+                                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                    {
+                                        try
+                                        {
+                                            OnLockedFolderAccessed?.Invoke(matchedVault);
+                                        }
+                                        finally
+                                        {
+                                            // Cooldown timer before allowing next auto-prompt for this folder
+                                            var cooldown = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                                            cooldown.Tick += (cs, ce) =>
+                                            {
+                                                cooldown.Stop();
+                                                lock (_activelyPromptingFolders)
+                                                {
+                                                    _activelyPromptingFolders.Remove(matchedVault.FolderPath);
+                                                }
+                                            };
+                                            cooldown.Start();
+                                        }
+                                    }));
                                 }
-                            }));
+                            }
+                            catch { }
+                            finally
+                            {
+                                try { Marshal.ReleaseComObject(window); } catch { }
+                            }
                         }
                     }
-                    catch { }
+                    finally
+                    {
+                        if (windowsObj != null)
+                        {
+                            try { Marshal.ReleaseComObject(windowsObj); } catch { }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (shell != null)
+                    {
+                        try { Marshal.ReleaseComObject(shell); } catch { }
+                    }
                 }
             }
             catch { }
@@ -772,6 +802,8 @@ namespace Vortex.Core.Vault
         /// <summary>
         /// Locks all active vault folders immediately.
         /// Uses cached session master key to safely re-encrypt any modified files before locking.
+        /// Zero Data-Loss Guarantee: If the session key is missing or re-encryption encounters errors/locks,
+        /// locking and file wiping are aborted for that folder to preserve cleartext user changes.
         /// </summary>
         public void LockAllVaults(string reason = "Manual Lock")
         {
@@ -787,9 +819,38 @@ namespace Vortex.Core.Vault
                     v.EncryptedPayloadPath = containerFile;
                 }
 
-                // If we have active session key and folder exists with files, re-encrypt safely
-                if (_cachedSessionVmk != null && Directory.Exists(v.FolderPath))
+                bool hasUnsealedFiles = false;
+                if (Directory.Exists(v.FolderPath))
                 {
+                    var dirInfo = new DirectoryInfo(v.FolderPath);
+                    hasUnsealedFiles = dirInfo.GetFiles().Any(f =>
+                        !f.Name.Equals("🔒_LOCKED_BY_VORTEX_VAULT.txt", StringComparison.OrdinalIgnoreCase) &&
+                        !f.Name.EndsWith(".vortexvault", StringComparison.OrdinalIgnoreCase) &&
+                        !f.Name.EndsWith(".vortexvault.bak", StringComparison.OrdinalIgnoreCase) &&
+                        !f.Name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)) ||
+                        dirInfo.GetDirectories().Length > 0;
+                }
+
+                if (hasUnsealedFiles)
+                {
+                    // CRITICAL SAFETY CHECK: If session key is missing, DO NOT wipe files!
+                    // User must provide Master Password to seal changes.
+                    if (_cachedSessionVmk == null)
+                    {
+                        continue;
+                    }
+
+                    // Check for active file locks
+                    var (isLocked, _) = VaultCryptoEngine.CheckDirectoryFileLocks(v.FolderPath);
+                    if (isLocked)
+                    {
+                        continue;
+                    }
+
+                    bool encSuccess = false;
+                    long totalBytes = 0;
+                    int fileCount = 0;
+
                     try
                     {
                         CleanBarrierFromFolder(v.FolderPath);
@@ -797,22 +858,31 @@ namespace Vortex.Core.Vault
                         {
                             try { File.Copy(containerFile, containerFile + ".bak", true); } catch { }
                         }
-                        var (encSuccess, _, totalBytes, fileCount) = _crypto.EncryptDirectoryWithKey(
+                        var result = _crypto.EncryptDirectoryWithKey(
                             v.FolderPath, containerFile, _cachedSessionVmk, settings.WrappedMasterKeyPassword, settings.WrappedMasterKeyRecovery, v.FolderName);
-                        if (encSuccess)
-                        {
-                            v.TotalSizeBytes = totalBytes;
-                            v.FileCount = fileCount;
-                        }
+                        encSuccess = result.success;
+                        totalBytes = result.totalBytes;
+                        fileCount = result.fileCount;
                     }
-                    catch { }
+                    catch
+                    {
+                        encSuccess = false;
+                    }
+
+                    if (!encSuccess)
+                    {
+                        // Encryption failed; abort locking to guarantee zero data loss!
+                        continue;
+                    }
+
+                    v.TotalSizeBytes = totalBytes;
+                    v.FileCount = fileCount;
                 }
 
                 v.IsLocked = true;
                 v.ProtectionMode = v.IsStealth ? "STEALTH" : "LOCKED_VISIBLE";
                 _db.SaveVaultFolder(v);
 
-                // Only wipe disk contents if we have an encrypted container verified on disk
                 if (!string.IsNullOrEmpty(v.EncryptedPayloadPath) && File.Exists(v.EncryptedPayloadPath))
                 {
                     ApplyLockToDisk(v);
