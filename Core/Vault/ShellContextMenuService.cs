@@ -11,6 +11,7 @@ namespace Vortex.Core.Vault
     public static class ShellContextMenuService
     {
         private const string FolderShellPath = @"Software\Classes\Directory\shell\VortexVault";
+        private const string BackgroundShellPath = @"Software\Classes\Directory\Background\shell\VortexVault";
         private const string DriveShellPath = @"Software\Classes\Drive\shell\VortexUsb";
 
         public static bool IsContextMenuRegistered()
@@ -34,19 +35,33 @@ namespace Vortex.Core.Vault
                 string icoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "vortex.ico");
                 if (!File.Exists(icoPath)) icoPath = exePath;
 
-                // 1. Directory Context Menu: "🛡️ Vortex: Lock / Protect Folder"
+                const string menuLabel = "🛡️ Lock with Vortex Vault";
+
+                // 1. Directory Context Menu: "🛡️ Lock with Vortex Vault" (Right-click folder)
                 using (var dirKey = Registry.CurrentUser.CreateSubKey(FolderShellPath, true))
                 {
                     if (dirKey != null)
                     {
-                        dirKey.SetValue("", "🛡️ Vortex: Protect & Lock Folder");
+                        dirKey.SetValue("", menuLabel);
                         dirKey.SetValue("Icon", icoPath);
                         using var cmdKey = dirKey.CreateSubKey("command", true);
                         cmdKey?.SetValue("", $"\"{exePath}\" --vault-lock \"%1\"");
                     }
                 }
 
-                // 2. Drive Context Menu: "💾 Vortex: Authorize USB Write Access"
+                // 2. Directory Background Context Menu (Right-click empty space inside an open folder)
+                using (var bgKey = Registry.CurrentUser.CreateSubKey(BackgroundShellPath, true))
+                {
+                    if (bgKey != null)
+                    {
+                        bgKey.SetValue("", menuLabel);
+                        bgKey.SetValue("Icon", icoPath);
+                        using var cmdKey = bgKey.CreateSubKey("command", true);
+                        cmdKey?.SetValue("", $"\"{exePath}\" --vault-lock \"%V\"");
+                    }
+                }
+
+                // 3. Drive Context Menu: "💾 Vortex: Authorize USB Write Access"
                 using (var driveKey = Registry.CurrentUser.CreateSubKey(DriveShellPath, true))
                 {
                     if (driveKey != null)
@@ -71,6 +86,7 @@ namespace Vortex.Core.Vault
             try
             {
                 Registry.CurrentUser.DeleteSubKeyTree(FolderShellPath, false);
+                Registry.CurrentUser.DeleteSubKeyTree(BackgroundShellPath, false);
                 Registry.CurrentUser.DeleteSubKeyTree(DriveShellPath, false);
                 return (true, "Context menu removed.");
             }

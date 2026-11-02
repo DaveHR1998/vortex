@@ -67,7 +67,7 @@ namespace Vortex.Views
                 return;
             }
 
-            var (success, key, msg) = _lockService.SetupMasterSecurity(pass);
+            var (success, key, msg) = _lockService.SetupMasterSecurity(pass, _generatedRecoveryKey);
             if (success)
             {
                 IsSetupComplete = true;

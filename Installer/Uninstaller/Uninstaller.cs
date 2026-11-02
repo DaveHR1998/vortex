@@ -146,12 +146,17 @@ namespace Vortex.Uninstaller
             };
             _cardPanel.Controls.Add(cardTitle);
 
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string vaultContainers = Path.Combine(appData, "Vortex", "VaultContainers");
+            bool hasVaults = Directory.Exists(vaultContainers) && Directory.GetFiles(vaultContainers, "*.vortexvault").Length > 0;
+
             string[] items = new string[]
             {
                 "•  Vortex Application Executable & Core Runtime Libraries",
                 "•  Desktop and Start Menu Shortcuts",
                 "•  Windows Startup Registration & Background Service Keys",
-                "•  Windows Add/Remove Programs Registry Entries"
+                "•  Windows Add/Remove Programs Registry Entries",
+                hasVaults ? "🛡️  Preserved: Encrypted Vaults remain safe in AppData" : "🛡️  Preserved: User configuration & vaults preserved"
             };
 
             int yOffset = 42;

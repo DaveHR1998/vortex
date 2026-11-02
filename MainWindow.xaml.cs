@@ -73,8 +73,9 @@ namespace Vortex
         private List<ProcessBlockService.BlockedItemModel> _allNetBlockedApps = new();
         private List<VaultFolderModel> _allVaultFolders = new();
         private List<RemovableDriveModel> _allRemovableDrives = new();
+        private bool _isSyncingVaultSettings = false;
 
-        public MainWindow()
+        public MainWindow(string[]? startupArgs = null)
         {
             InitializeComponent();
             LoadWindowIconSafely();
@@ -183,16 +184,152 @@ namespace Vortex
                     UpdateHeaderTelemetry();
                     await RefreshProcessesAsync();
                     ShowFloatingOrb();
+
+                    // Automatically ensure Windows Explorer right-click integration is active
+                    try
+                    {
+                        if (!ShellContextMenuService.IsContextMenuRegistered())
+                        {
+                            ShellContextMenuService.RegisterContextMenu();
+                        }
+                    }
+                    catch { }
+
+                    if (startupArgs != null && startupArgs.Length > 0)
+                    {
+                        _ = Dispatcher.BeginInvoke(new Action(() => HandleStartupArguments(startupArgs)), System.Windows.Threading.DispatcherPriority.Background);
+                    }
                 }
                 catch { }
             };
         }
 
-        private void RestoreMainWindow()
+        public void RestoreAndHandleArguments(string[] args)
+        {
+            RestoreMainWindow();
+            HandleStartupArguments(args);
+        }
+
+        private void HandleStartupArguments(string[] args)
+        {
+            try
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (args[i].Equals("--vault-lock", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                    {
+                        string targetPath = args[i + 1].Trim('"');
+                        if (NavVault != null) NavVault.IsChecked = true;
+                        if (SubTabVaultFolders != null) SubTabVaultFolders.IsChecked = true;
+                        PromptLockForPath(targetPath);
+                        break;
+                    }
+                    else if (args[i].Equals("--usb-auth", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (NavVault != null) NavVault.IsChecked = true;
+                        if (SubTabVaultUsb != null) SubTabVaultUsb.IsChecked = true;
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void PromptLockForPath(string targetPath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(targetPath) || !Directory.Exists(targetPath)) return;
+                string normalizedTarget = Path.GetFullPath(targetPath).TrimEnd('\\');
+                var existing = _folderLockService.GetAllVaultFolders().FirstOrDefault(f => Path.GetFullPath(f.FolderPath).TrimEnd('\\').Equals(normalizedTarget, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    if (existing.IsLocked)
+                    {
+                        string pass = string.Empty;
+                        if (!_folderLockService.HasActiveSession)
+                        {
+                            var (auth, entered) = VaultPasswordDialog.Prompt(this, _folderLockService, "Unlock Folder", $"Enter Master Password to decrypt and unlock '{existing.FolderName}'.");
+                            if (!auth) return;
+                            pass = entered;
+                        }
+
+                        var (unlocked, msg) = _folderLockService.UnlockFolder(existing.FolderPath, pass, openInExplorer: true);
+                        if (!unlocked)
+                        {
+                            HandleUnlockFailureWithRecoveryPrompt(existing, pass, msg);
+                        }
+                        RefreshVaultView();
+                    }
+                    else
+                    {
+                        string pass = string.Empty;
+                        if (!_folderLockService.HasActiveSession)
+                        {
+                            var (auth, entered) = VaultPasswordDialog.Prompt(this, _folderLockService, "Lock Folder", $"Enter Master Password to encrypt and lock '{existing.FolderName}'.");
+                            if (!auth) return;
+                            pass = entered;
+                        }
+
+                        var (locked, msg) = _folderLockService.LockFolder(existing.FolderPath, pass);
+                        if (!locked)
+                        {
+                            VortexDialogWindow.ShowWarning(this, "Lock Error", msg);
+                        }
+                        RefreshVaultView();
+                    }
+                }
+                else
+                {
+                    if (!EnsureMasterSecurityConfigured()) return;
+                    var (valid, reason) = _folderLockService.ValidateFolderPath(targetPath);
+                    if (!valid)
+                    {
+                        VortexDialogWindow.ShowWarning(this, "Cannot Protect Folder", reason);
+                        return;
+                    }
+
+                    var result = MessageBox.Show(
+                        $"Lock '{Path.GetFileName(targetPath)}' with Vortex Vault in Stealth (Invisible) Mode?\n\n• YES = Stealth Mode (Folder vanishes from Explorer & CMD)\n• NO = Visible Mode (Locked with barrier note)",
+                        "Choose Protection Mode", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.Cancel) return;
+                    bool isStealth = (result == MessageBoxResult.Yes);
+
+                    string pass = string.Empty;
+                    if (!_folderLockService.HasActiveSession)
+                    {
+                        var (auth, entered) = VaultPasswordDialog.Prompt(this, _folderLockService, "Lock Folder Authentication", $"Enter Master Password to encrypt '{Path.GetFileName(targetPath)}'.");
+                        if (!auth) return;
+                        pass = entered;
+                    }
+
+                    var (success, msg) = _folderLockService.ProtectFolder(targetPath, pass, isStealth);
+                    if (success)
+                    {
+                        VortexDialogWindow.ShowSuccess(this, "Folder Protected in Vault", Path.GetFileName(targetPath), isStealth ? "Stealth Mode" : "Visible Locked",
+                            $"Directory encrypted and sealed with AES-256-GCM.\n• Path: {targetPath}\n• Mode: {(isStealth ? "Invisible in Explorer/CMD" : "Visible but impassable")}");
+                    }
+                    else
+                    {
+                        VortexDialogWindow.ShowWarning(this, "Lock Error", msg);
+                    }
+                    RefreshVaultView();
+                }
+            }
+            catch { }
+        }
+
+        public void RestoreMainWindow()
         {
             Show();
-            WindowState = WindowState.Normal;
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
             Activate();
+            Topmost = true;
+            Topmost = false;
+            Focus();
         }
 
         private void ToggleFocusMode()
@@ -2472,8 +2609,31 @@ namespace Vortex
                 }
 
                 // Settings controls synchronization
-                if (ChkVaultLockOnScreenLock != null) ChkVaultLockOnScreenLock.IsChecked = settings.AutoLockOnScreenLock;
-                if (ChkVaultContextMenu != null) ChkVaultContextMenu.IsChecked = ShellContextMenuService.IsContextMenuRegistered();
+                _isSyncingVaultSettings = true;
+                try
+                {
+                    if (ChkVaultLockOnScreenLock != null) ChkVaultLockOnScreenLock.IsChecked = settings.AutoLockOnScreenLock;
+                    if (ChkVaultContextMenu != null) ChkVaultContextMenu.IsChecked = ShellContextMenuService.IsContextMenuRegistered();
+                    if (CmbVaultIdleMinutes != null)
+                    {
+                        foreach (ComboBoxItem item in CmbVaultIdleMinutes.Items)
+                        {
+                            if (int.TryParse(item.Tag?.ToString(), out int mins) && mins == settings.AutoLockIdleMinutes)
+                            {
+                                CmbVaultIdleMinutes.SelectedItem = item;
+                                break;
+                            }
+                        }
+                        if (CmbVaultIdleMinutes.SelectedItem == null && CmbVaultIdleMinutes.Items.Count > 0)
+                        {
+                            CmbVaultIdleMinutes.SelectedIndex = 0;
+                        }
+                    }
+                }
+                finally
+                {
+                    _isSyncingVaultSettings = false;
+                }
 
                 ApplyVaultFilter();
                 if (LvRemovableDrives != null) LvRemovableDrives.ItemsSource = _allRemovableDrives;
@@ -2614,7 +2774,10 @@ namespace Vortex
                     {
                         TxtStatusBar.Text = $"Decrypting and restoring '{item.FolderName}'...";
                         var (success, msg) = _folderLockService.UnlockFolder(item.FolderPath, password, openInExplorer: true);
-                        if (!success) VortexDialogWindow.ShowWarning(this, "Unlock Failed", msg);
+                        if (!success)
+                        {
+                            HandleUnlockFailureWithRecoveryPrompt(item, password, msg);
+                        }
                         RefreshVaultView();
                     }
                 }
@@ -2692,7 +2855,11 @@ namespace Vortex
                     var (auth, password) = VaultPasswordDialog.Prompt(this, _folderLockService, "Unlock & Open Folder", $"Enter Master Password to unlock '{item.FolderName}' and view in File Explorer.");
                     if (auth)
                     {
-                        _folderLockService.UnlockFolder(item.FolderPath, password, openInExplorer: true);
+                        var (success, msg) = _folderLockService.UnlockFolder(item.FolderPath, password, openInExplorer: true);
+                        if (!success)
+                        {
+                            HandleUnlockFailureWithRecoveryPrompt(item, password, msg);
+                        }
                         RefreshVaultView();
                     }
                 }
@@ -2715,20 +2882,102 @@ namespace Vortex
                     "Remove & Restore");
                 if (!confirm) return;
 
-                var (auth, password) = VaultPasswordDialog.Prompt(this, _folderLockService, "Remove from Vault Authentication", $"Enter Master Password to restore '{item.FolderName}'.");
-                if (auth)
+                string password = string.Empty;
+                if (item.IsLocked && !_folderLockService.HasActiveSession)
                 {
-                    var (success, msg) = _folderLockService.RemoveFromVault(item.FolderPath, password);
-                    if (success)
+                    var (auth, enteredPass) = VaultPasswordDialog.Prompt(this, _folderLockService, "Remove from Vault Authentication", $"Enter Master Password to decrypt and restore '{item.FolderName}'.");
+                    if (!auth) return;
+                    password = enteredPass;
+                }
+
+                var (success, msg) = _folderLockService.RemoveFromVault(item.FolderPath, password);
+                if (success)
+                {
+                    VortexDialogWindow.ShowSuccess(this, "Folder Restored to Normal", item.FolderName, "Protection Removed", msg);
+                    RefreshVaultView();
+                    TxtStatusBar.Text = msg;
+                }
+                else
+                {
+                    VortexDialogWindow.ShowWarning(this, "Remove Error", msg);
+                }
+            }
+        }
+
+        private void OnVaultBackupContainerRowClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is VaultFolderModel item)
+            {
+                if (string.IsNullOrEmpty(item.EncryptedPayloadPath) || !File.Exists(item.EncryptedPayloadPath))
+                {
+                    VortexDialogWindow.ShowWarning(this, "Container Missing", "Encrypted container file was not found on disk.");
+                    return;
+                }
+
+                var dlg = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = $"Export Encrypted Backup for '{item.FolderName}'",
+                    FileName = $"{item.FolderName}_backup_{DateTime.Now:yyyyMMdd}.vortexvault",
+                    Filter = "Vortex Vault Containers (*.vortexvault)|*.vortexvault|All Files (*.*)|*.*",
+                    DefaultExt = ".vortexvault"
+                };
+
+                if (dlg.ShowDialog(this) == true)
+                {
+                    try
                     {
-                        VortexDialogWindow.ShowSuccess(this, "Folder Restored to Normal", item.FolderName, "Protection Removed", msg);
-                        RefreshVaultView();
+                        File.Copy(item.EncryptedPayloadPath, dlg.FileName, overwrite: true);
+                        VortexDialogWindow.ShowSuccess(this, "Vault Export Successful", Path.GetFileName(dlg.FileName), "Self-Contained Backup",
+                            $"Standalone encrypted container has been saved.\n• Destination: {dlg.FileName}\n\nThis container can be decrypted at any time using your Master Password or Recovery Key, even on other computers without Vortex installed.");
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        VortexDialogWindow.ShowWarning(this, "Remove Error", msg);
+                        VortexDialogWindow.ShowWarning(this, "Export Failed", ex.Message);
                     }
                 }
+            }
+        }
+
+        private void OnVaultEmergencyRescueClick(object sender, RoutedEventArgs e)
+        {
+            var openDlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select .vortexvault Container File to Rescue & Decrypt",
+                Filter = "Vortex Vault Containers (*.vortexvault)|*.vortexvault|All Files (*.*)|*.*",
+                Multiselect = false
+            };
+
+            if (openDlg.ShowDialog(this) != true) return;
+
+            string containerPath = openDlg.FileName;
+
+            var folderDlg = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "Select Destination Directory to Extract Decrypted Files"
+            };
+
+            if (folderDlg.ShowDialog(this) != true) return;
+
+            string destFolder = folderDlg.FolderName;
+
+            var (auth, credential) = VaultPasswordDialog.Prompt(this, _folderLockService,
+                "Rescue Authentication",
+                "Enter Master Password or Emergency Recovery Key to decrypt container:");
+
+            if (!auth) return;
+
+            TxtStatusBar.Text = "Decrypting container and extracting files...";
+            var (success, msg) = _folderLockService.EmergencyRescueContainer(containerPath, destFolder, credential);
+
+            if (success)
+            {
+                VortexDialogWindow.ShowSuccess(this, "Container Decrypted Successfully", Path.GetFileName(containerPath), "Rescue Complete",
+                    $"All files were successfully decrypted and restored to:\n{destFolder}");
+                try { System.Diagnostics.Process.Start("explorer.exe", destFolder); } catch { }
+            }
+            else
+            {
+                VortexDialogWindow.ShowWarning(this, "Rescue Decryption Failed", msg);
             }
         }
 
@@ -2788,9 +3037,55 @@ namespace Vortex
         {
             if (!EnsureMasterSecurityConfigured()) return;
 
-            var setupWin = new VaultSetupWindow(_folderLockService, _vaultCrypto) { Owner = this };
-            setupWin.ShowDialog();
+            var changeWin = new VaultChangePasswordDialog(_folderLockService) { Owner = this };
+            bool? res = changeWin.ShowDialog();
+            if (res == true && changeWin.PasswordChangedSuccessfully)
+            {
+                VortexDialogWindow.ShowSuccess(this, "Master Password Changed", "Zero-Loss Re-wrapped", "Security Updated",
+                    "Your Master Password was changed successfully. All encrypted folders remain protected and accessible.");
+            }
             RefreshVaultView();
+        }
+
+        private void HandleUnlockFailureWithRecoveryPrompt(VaultFolderModel item, string enteredPassword, string initialError)
+        {
+            if (initialError.Contains("Authentication failed") || initialError.Contains("Access Denied") || initialError.Contains("Decryption failed") || initialError.Contains("Incorrect Master Password"))
+            {
+                bool wantRecover = VortexDialogWindow.ShowConfirm(this,
+                    "Key Mismatch Detected",
+                    $"'{item.FolderName}' could not be decrypted with your current Master Key.\n\n" +
+                    "This occurs if your Master Password was reset or changed.\n\n" +
+                    "Would you like to enter the PREVIOUS Master Password or Emergency Recovery Key used when this folder was locked to restore access?",
+                    "Recover Folder");
+
+                if (wantRecover)
+                {
+                    var (recAuth, prevCred) = VaultPasswordDialog.Prompt(
+                        this,
+                        _folderLockService,
+                        "Recover Locked Vault",
+                        $"Enter the PREVIOUS Master Password or Recovery Key for '{item.FolderName}':",
+                        allowBypassAuthenticationCheck: true);
+
+                    if (recAuth && !string.IsNullOrWhiteSpace(prevCred))
+                    {
+                        TxtStatusBar.Text = $"Recovering and re-synchronizing '{item.FolderName}'...";
+                        var (recSuccess, recMsg) = _folderLockService.RecoverAndUnlockFolder(item.FolderPath, prevCred, enteredPassword, openInExplorer: true);
+                        if (recSuccess)
+                        {
+                            VortexDialogWindow.ShowSuccess(this, "Vault Restored & Synchronized", "AES-256-GCM Restored", "Data Intact",
+                                $"'{item.FolderName}' has been unlocked and restored!\n\nYour Master Security has been re-synchronized so your current password will work for all vaults.");
+                            return;
+                        }
+                        else
+                        {
+                            VortexDialogWindow.ShowWarning(this, "Recovery Failed", recMsg);
+                            return;
+                        }
+                    }
+                }
+            }
+            VortexDialogWindow.ShowWarning(this, "Unlock Failed", initialError);
         }
 
         private void OnViewRecoveryKeyClick(object sender, RoutedEventArgs e)
@@ -2808,7 +3103,7 @@ namespace Vortex
 
         private void OnVaultAutoLockPolicyChanged(object sender, RoutedEventArgs e)
         {
-            if (_folderLockService == null || ChkVaultLockOnScreenLock == null) return;
+            if (_isSyncingVaultSettings || _folderLockService == null || ChkVaultLockOnScreenLock == null) return;
             var settings = _folderLockService.GetSettings();
             settings.AutoLockOnScreenLock = ChkVaultLockOnScreenLock.IsChecked == true;
             _folderLockService.SaveSettings(settings);
@@ -2817,7 +3112,7 @@ namespace Vortex
 
         private void OnVaultIdleMinutesChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_folderLockService == null || CmbVaultIdleMinutes == null) return;
+            if (_isSyncingVaultSettings || _folderLockService == null || CmbVaultIdleMinutes == null) return;
             if (CmbVaultIdleMinutes.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out int mins))
             {
                 var settings = _folderLockService.GetSettings();
@@ -2829,7 +3124,7 @@ namespace Vortex
 
         private void OnVaultContextMenuPolicyChanged(object sender, RoutedEventArgs e)
         {
-            if (_folderLockService == null || ChkVaultContextMenu == null) return;
+            if (_isSyncingVaultSettings || _folderLockService == null || ChkVaultContextMenu == null) return;
             bool enable = ChkVaultContextMenu.IsChecked == true;
             if (enable)
             {

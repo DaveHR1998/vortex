@@ -514,10 +514,12 @@ namespace Vortex.Core.Database
             if (string.IsNullOrEmpty(folderPath)) return null;
             try
             {
+                string norm = folderPath.TrimEnd('\\', '/');
                 using var conn = GetConnection();
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT Id, FolderPath, FolderName, ProtectionMode, IsLocked, IsStealth, TotalSizeBytes, FileCount, EncryptedPayloadPath, CreatedAt, LastUnlockedAt FROM VaultFolders WHERE FolderPath = $path COLLATE NOCASE LIMIT 1";
-                cmd.Parameters.AddWithValue("$path", folderPath);
+                cmd.CommandText = "SELECT Id, FolderPath, FolderName, ProtectionMode, IsLocked, IsStealth, TotalSizeBytes, FileCount, EncryptedPayloadPath, CreatedAt, LastUnlockedAt FROM VaultFolders WHERE RTRIM(FolderPath, '\\/') = $norm COLLATE NOCASE OR FolderPath = $raw COLLATE NOCASE LIMIT 1";
+                cmd.Parameters.AddWithValue("$norm", norm);
+                cmd.Parameters.AddWithValue("$raw", folderPath);
                 using var reader = cmd.ExecuteReader();
                 if (reader.Read())
                 {
@@ -580,10 +582,12 @@ namespace Vortex.Core.Database
             if (string.IsNullOrEmpty(folderPath)) return;
             try
             {
+                string norm = folderPath.TrimEnd('\\', '/');
                 using var conn = GetConnection();
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = "DELETE FROM VaultFolders WHERE FolderPath = $path COLLATE NOCASE";
-                cmd.Parameters.AddWithValue("$path", folderPath);
+                cmd.CommandText = "DELETE FROM VaultFolders WHERE RTRIM(FolderPath, '\\/') = $norm COLLATE NOCASE OR FolderPath = $raw COLLATE NOCASE";
+                cmd.Parameters.AddWithValue("$norm", norm);
+                cmd.Parameters.AddWithValue("$raw", folderPath);
                 cmd.ExecuteNonQuery();
             }
             catch { }
@@ -608,7 +612,7 @@ namespace Vortex.Core.Database
                         AutoLockOnScreenLock = reader.GetInt32(4) == 1,
                         AutoLockIdleMinutes = reader.GetInt32(5),
                         UsbWriteBlockEnabled = reader.GetInt32(6) == 1,
-                        UsbAllowedUntil = reader.IsDBNull(7) ? null : (DateTime.TryParse(reader.GetString(7), out var udt) ? udt : null),
+                        UsbAllowedUntil = reader.IsDBNull(7) ? null : (DateTime.TryParse(reader.GetString(7), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var udt) ? udt.ToUniversalTime() : null),
                         ShellContextMenuEnabled = reader.GetInt32(8) == 1,
                         WrappedMasterKeyPassword = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
                         WrappedMasterKeyRecovery = reader.IsDBNull(10) ? string.Empty : reader.GetString(10)

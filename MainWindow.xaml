@@ -1626,6 +1626,7 @@
 
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Refresh" Click="OnVaultRefreshClick" Margin="0,0,8,0" Height="32" />
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="🛟 Standalone Rescue..." Click="OnVaultEmergencyRescueClick" Margin="0,0,8,0" Height="32" ToolTip="Directly decrypt any standalone .vortexvault container using Password or Recovery Key" />
                                     <Button Style="{StaticResource VortexPrimaryButton}" Content="➕ Add Folder to Vault..." Click="OnVaultAddFolderClick" Height="32" ToolTip="Select any directory on your computer to encrypt and protect" />
                                 </StackPanel>
                             </DockPanel>
@@ -1677,7 +1678,7 @@
                                                 </GridViewColumn.CellTemplate>
                                             </GridViewColumn>
 
-                                            <GridViewColumn Header="Quick Actions" Width="240">
+                                            <GridViewColumn Header="Quick Actions" Width="280">
                                                 <GridViewColumn.CellTemplate>
                                                     <DataTemplate>
                                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -1715,6 +1716,9 @@
 
                                                             <!-- Open in Explorer -->
                                                             <Button Style="{StaticResource VortexSecondaryButton}" Content="📂 Open" Click="OnVaultOpenFolderRowClick" Padding="6,3" FontSize="10.5" Margin="0,0,4,0" ToolTip="Open folder in Windows File Explorer" />
+
+                                                            <!-- Export Backup Container -->
+                                                            <Button Style="{StaticResource VortexSecondaryButton}" Content="💾" Click="OnVaultBackupContainerRowClick" Padding="6,3" FontSize="10.5" Margin="0,0,4,0" ToolTip="Export standalone container (.vortexvault) to backup drive or USB" />
 
                                                             <!-- Remove from Vault -->
                                                             <Button Style="{StaticResource VortexSecondaryButton}" Content="🗑️" Click="OnVaultRemoveRowClick" Padding="6,3" FontSize="10.5" Foreground="{DynamicResource StatusDangerBrush}" ToolTip="Remove from Vault protection and restore unencrypted" />
@@ -1869,7 +1873,7 @@
                                     <TextBlock Text="WINDOWS EXPLORER RIGHT-CLICK INTEGRATION" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentGlowBrush}" Margin="0,0,0,8" />
                                     <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                                         <StackPanel>
-                                            <CheckBox x:Name="ChkVaultContextMenu" Style="{StaticResource ModernCheckBox}" Content="Show '🛡️ Vortex: Protect &amp; Lock Folder' in Windows File Explorer right-click menu" Click="OnVaultContextMenuPolicyChanged" />
+                                            <CheckBox x:Name="ChkVaultContextMenu" Style="{StaticResource ModernCheckBox}" Content="Show '🛡️ Lock with Vortex Vault' in Windows File Explorer right-click menu" Click="OnVaultContextMenuPolicyChanged" />
                                             <TextBlock Text="Allows right-clicking any folder on your drive to instantly lock or stealth-hide it." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="26,4,0,0" />
                                         </StackPanel>
                                     </Border>

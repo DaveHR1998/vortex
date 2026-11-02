@@ -1,5 +1,8 @@
 using System;
 using System.IO;
+using System.IO.Pipes;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -67,6 +70,9 @@ namespace Vortex
                     else
                     {
                         // Another instance of Vortex is already running!
+                        // Send command line arguments (e.g. --vault-lock) to the active instance via Named Pipe
+                        SendArgsToRunningInstance(e.Args);
+
                         // Wake up and restore the existing window to the foreground
                         int msg = RegisterWindowMessage("VORTEX_RESTORE_MAIN_WINDOW");
                         PostMessage((IntPtr)HWND_BROADCAST, msg, IntPtr.Zero, IntPtr.Zero);
@@ -86,9 +92,12 @@ namespace Vortex
 
             try
             {
-                var mainWindow = new MainWindow();
+                var mainWindow = new MainWindow(e.Args);
                 MainWindow = mainWindow;
                 mainWindow.Show();
+
+                // Start Named Pipe IPC Server to receive commands from Explorer context menu and subsequent instances
+                StartIpcServer(mainWindow);
             }
             catch (Exception ex)
             {
@@ -145,6 +154,62 @@ namespace Vortex
                 File.AppendAllText(logFile, logEntry);
             }
             catch { }
+        }
+
+        private const string IpcPipeName = "Vortex_SingleInstance_IPC_Pipe";
+
+        private static bool SendArgsToRunningInstance(string[]? args)
+        {
+            if (args == null || args.Length == 0) return false;
+            try
+            {
+                using var client = new NamedPipeClientStream(".", IpcPipeName, PipeDirection.Out);
+                client.Connect(750);
+                using var writer = new StreamWriter(client, Encoding.UTF8);
+                writer.WriteLine(string.Join("\t", args));
+                writer.Flush();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void StartIpcServer(MainWindow mainWindow)
+        {
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        using var server = new NamedPipeServerStream(
+                            IpcPipeName,
+                            PipeDirection.In,
+                            1,
+                            PipeTransmissionMode.Byte,
+                            PipeOptions.Asynchronous);
+
+                        await server.WaitForConnectionAsync();
+
+                        using var reader = new StreamReader(server, Encoding.UTF8);
+                        string? line = await reader.ReadLineAsync();
+                        if (!string.IsNullOrEmpty(line))
+                        {
+                            string[] args = line.Split('\t');
+                            mainWindow.Dispatcher.Invoke(() =>
+                            {
+                                mainWindow.RestoreAndHandleArguments(args);
+                            });
+                        }
+                    }
+                    catch
+                    {
+                        await Task.Delay(1000);
+                    }
+                }
+            });
         }
     }
 }

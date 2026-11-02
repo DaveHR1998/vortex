@@ -237,17 +237,42 @@ namespace Vortex.Core.Vault
             return (true, string.Empty);
         }
 
+        private byte[]? _cachedSessionVmk;
+
+        /// <summary>
+        /// Indicates whether there is an actively unlocked Vault session in memory.
+        /// </summary>
+        public bool HasActiveSession => _cachedSessionVmk != null;
+
+        /// <summary>
+        /// Clears the cached Vault Master Key from memory (locks the active session).
+        /// </summary>
+        public void ClearSession() => _cachedSessionVmk = null;
+
         /// <summary>
         /// Initial setup of Master Credentials (Password + Recovery Key + Wrapped 256-bit VMK).
+        /// If a specific recovery key was presented/copied by the user, it is synchronized and preserved.
         /// </summary>
-        public (bool success, string plainRecoveryKey, string message) SetupMasterSecurity(string masterPassword)
+        public (bool success, string plainRecoveryKey, string message) SetupMasterSecurity(string masterPassword, string? specificRecoveryKey = null)
         {
             if (string.IsNullOrWhiteSpace(masterPassword) || masterPassword.Length < 6)
                 return (false, string.Empty, "Password must be at least 6 characters long.");
 
             var (hash, salt) = _crypto.HashPassword(masterPassword);
-            var (plainKey, keyHash) = _crypto.GenerateRecoveryKey();
-            byte[] vmk = _crypto.GenerateVaultMasterKey();
+            string plainKey;
+            string keyHash;
+
+            if (!string.IsNullOrWhiteSpace(specificRecoveryKey))
+            {
+                plainKey = VaultCryptoEngine.FormatRecoveryKey(specificRecoveryKey);
+                keyHash = _crypto.ComputeRecoveryKeyHash(plainKey);
+            }
+            else
+            {
+                (plainKey, keyHash) = _crypto.GenerateRecoveryKey();
+            }
+
+            byte[] vmk = _cachedSessionVmk ?? _crypto.GenerateVaultMasterKey();
 
             string wrappedWithPass = _crypto.WrapMasterKey(vmk, masterPassword);
             string wrappedWithRecovery = _crypto.WrapMasterKey(vmk, plainKey);
@@ -261,6 +286,8 @@ namespace Vortex.Core.Vault
             settings.WrappedMasterKeyRecovery = wrappedWithRecovery;
             _db.SaveVaultSettings(settings);
 
+            _cachedSessionVmk = vmk;
+
             return (true, plainKey, "Master security configured successfully! Keep your Recovery Key in a safe location.");
         }
 
@@ -271,7 +298,11 @@ namespace Vortex.Core.Vault
         public (bool success, byte[] vmk, string message) ResolveVaultMasterKey(string credential)
         {
             if (string.IsNullOrEmpty(credential))
+            {
+                if (_cachedSessionVmk != null)
+                    return (true, _cachedSessionVmk, string.Empty);
                 return (false, Array.Empty<byte>(), "Credential cannot be empty.");
+            }
 
             var settings = _db.GetVaultSettings();
             if (!settings.IsSetup)
@@ -281,14 +312,22 @@ namespace Vortex.Core.Vault
             if (!string.IsNullOrEmpty(settings.WrappedMasterKeyPassword))
             {
                 var (unwrapped, key, _) = _crypto.UnwrapMasterKey(settings.WrappedMasterKeyPassword, credential);
-                if (unwrapped) return (true, key, string.Empty);
+                if (unwrapped)
+                {
+                    _cachedSessionVmk = key;
+                    return (true, key, string.Empty);
+                }
             }
 
             // 2. Try unwrapping with Emergency Recovery Key slot
             if (!string.IsNullOrEmpty(settings.WrappedMasterKeyRecovery))
             {
                 var (unwrapped, key, _) = _crypto.UnwrapMasterKey(settings.WrappedMasterKeyRecovery, credential);
-                if (unwrapped) return (true, key, string.Empty);
+                if (unwrapped)
+                {
+                    _cachedSessionVmk = key;
+                    return (true, key, string.Empty);
+                }
             }
 
             // 3. Fallback / Upgrade for Legacy Vaults (derive and auto-migrate)
@@ -300,10 +339,10 @@ namespace Vortex.Core.Vault
                 settings.WrappedMasterKeyPassword = _crypto.WrapMasterKey(vmk, credential);
                 if (!string.IsNullOrEmpty(settings.RecoveryKeyHash))
                 {
-                    // If recovery hash exists, we preserve it
                     settings.WrappedMasterKeyRecovery = _crypto.WrapMasterKey(vmk, credential);
                 }
                 _db.SaveVaultSettings(settings);
+                _cachedSessionVmk = vmk;
                 return (true, vmk, string.Empty);
             }
 
@@ -315,6 +354,8 @@ namespace Vortex.Core.Vault
         /// </summary>
         public bool Authenticate(string credential)
         {
+            if (string.IsNullOrEmpty(credential) && _cachedSessionVmk != null)
+                return true;
             var (success, _, _) = ResolveVaultMasterKey(credential);
             return success;
         }
@@ -340,11 +381,13 @@ namespace Vortex.Core.Vault
             settings.WrappedMasterKeyPassword = newWrappedPass;
             _db.SaveVaultSettings(settings);
 
+            _cachedSessionVmk = vmk;
             return (true, "Master Password changed successfully. All encrypted vaults remain safe and accessible.");
         }
 
         /// <summary>
         /// Adds a folder to the Vault and immediately locks it in either Visible or Stealth mode using Envelope Encryption.
+        /// Container is saved with self-contained V2 header to guarantee portability across machines and uninstalls.
         /// </summary>
         public (bool success, string message) ProtectFolder(string folderPath, string credential, bool isStealth)
         {
@@ -358,16 +401,49 @@ namespace Vortex.Core.Vault
             string full = Path.GetFullPath(folderPath).TrimEnd('\\');
             string folderName = Path.GetFileName(full);
 
-            // Container file stored safely in %LocalAppData%\Vortex\VaultContainers\
-            string containerDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Vortex", "VaultContainers");
-            Directory.CreateDirectory(containerDir);
-            string containerFile = Path.Combine(containerDir, $"vault_{Guid.NewGuid():N}.vortexvault");
+            // In-Place Container placement: container stored directly inside the protected folder
+            string inPlaceContainer = Path.Combine(full, $"{folderName}.vortexvault");
+
+            // Check if this folder is ALREADY a locked Vortex container (e.g., after app reinstall or copied from USB)
+            string? existingContainer = null;
+            if (File.Exists(inPlaceContainer))
+            {
+                existingContainer = inPlaceContainer;
+            }
+            else if (Directory.Exists(full))
+            {
+                existingContainer = Directory.GetFiles(full, "*.vortexvault").FirstOrDefault();
+            }
+
+            if (existingContainer != null)
+            {
+                var existingInfo = new FileInfo(existingContainer);
+                var existingModel = new VaultFolderModel
+                {
+                    FolderPath = full,
+                    FolderName = folderName,
+                    ProtectionMode = isStealth ? "STEALTH" : "LOCKED_VISIBLE",
+                    IsLocked = true,
+                    IsStealth = isStealth,
+                    TotalSizeBytes = existingInfo.Length,
+                    FileCount = 1,
+                    EncryptedPayloadPath = existingContainer,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.SaveVaultFolder(existingModel);
+                ApplyLockToDisk(existingModel);
+
+                OnVaultStateChanged?.Invoke();
+                return (true, $"'{folderName}' recognized as an existing locked container and registered to your Vault.");
+            }
 
             // 1. Clean any existing lock note before encrypting
             CleanBarrierFromFolder(full);
 
-            // 2. Encrypt directory using 256-bit VMK
-            var (encSuccess, encError, totalBytes, fileCount) = _crypto.EncryptDirectoryWithKey(full, containerFile, vmk);
+            // 2. Encrypt directory into in-place container using 256-bit VMK with self-contained V2 recovery headers
+            var settings = _db.GetVaultSettings();
+            var (encSuccess, encError, totalBytes, fileCount) = _crypto.EncryptDirectoryWithKey(
+                full, inPlaceContainer, vmk, settings.WrappedMasterKeyPassword, settings.WrappedMasterKeyRecovery, folderName);
             if (!encSuccess)
                 return (false, $"Encryption failed: {encError}");
 
@@ -381,12 +457,12 @@ namespace Vortex.Core.Vault
                 IsStealth = isStealth,
                 TotalSizeBytes = totalBytes,
                 FileCount = fileCount,
-                EncryptedPayloadPath = containerFile,
+                EncryptedPayloadPath = inPlaceContainer,
                 CreatedAt = DateTime.UtcNow
             };
             _db.SaveVaultFolder(model);
 
-            // 4. Apply locking to folder on disk
+            // 4. Apply locking to folder on disk (leaves in-place container + lock barrier note)
             ApplyLockToDisk(model);
 
             OnVaultStateChanged?.Invoke();
@@ -433,18 +509,49 @@ namespace Vortex.Core.Vault
             if (!auth)
                 return (false, authError);
 
-            if (string.IsNullOrEmpty(model.EncryptedPayloadPath) || !File.Exists(model.EncryptedPayloadPath))
+            string payloadPath = model.EncryptedPayloadPath;
+            if (string.IsNullOrEmpty(payloadPath) || !File.Exists(payloadPath))
+            {
+                // In-Place Container fallback: check for container directly in the folder
+                string inPlace = Path.Combine(model.FolderPath, $"{model.FolderName}.vortexvault");
+                if (File.Exists(inPlace))
+                {
+                    payloadPath = inPlace;
+                    model.EncryptedPayloadPath = inPlace;
+                }
+                else if (Directory.Exists(model.FolderPath))
+                {
+                    var match = Directory.GetFiles(model.FolderPath, "*.vortexvault").FirstOrDefault();
+                    if (match != null)
+                    {
+                        payloadPath = match;
+                        model.EncryptedPayloadPath = match;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(payloadPath) || !File.Exists(payloadPath))
                 return (false, "Encrypted vault container payload is missing.");
 
-            // 1. Clean barrier from folder if exists
+            // 1. Clean barrier from folder if exists and ensure directory attributes are cleared before writing
             CleanBarrierFromFolder(model.FolderPath);
+            try
+            {
+                if (Directory.Exists(model.FolderPath))
+                {
+                    var dir = new DirectoryInfo(model.FolderPath);
+                    dir.Attributes &= ~FileAttributes.Hidden;
+                    dir.Attributes &= ~FileAttributes.System;
+                }
+            }
+            catch { }
 
             // 2. Decrypt vault container using VMK
-            var (decSuccess, decError) = _crypto.DecryptVaultWithKey(model.EncryptedPayloadPath, model.FolderPath, vmk);
+            var (decSuccess, decError) = _crypto.DecryptVaultWithKey(payloadPath, model.FolderPath, vmk);
             if (!decSuccess)
             {
-                // Fallback to legacy direct password decryption in case container was created on older version
-                (decSuccess, decError) = _crypto.DecryptVaultToDirectory(model.EncryptedPayloadPath, model.FolderPath, credential);
+                // Fallback to standalone credential unwrap / legacy derivation
+                (decSuccess, decError) = _crypto.DecryptVaultToDirectory(payloadPath, model.FolderPath, credential);
             }
 
             if (!decSuccess)
@@ -453,12 +560,11 @@ namespace Vortex.Core.Vault
             // 3. Ensure no lock notes remain in directory after extraction
             CleanBarrierFromFolder(model.FolderPath);
 
-            // 4. Remove Hidden / System attributes
+            // 4. Hide in-place container so it does not clutter user's unencrypted workflow
             try
             {
-                var dir = new DirectoryInfo(model.FolderPath);
-                dir.Attributes &= ~FileAttributes.Hidden;
-                dir.Attributes &= ~FileAttributes.System;
+                if (File.Exists(payloadPath))
+                    File.SetAttributes(payloadPath, FileAttributes.Hidden);
             }
             catch { }
 
@@ -479,6 +585,114 @@ namespace Vortex.Core.Vault
         }
 
         /// <summary>
+        /// Recovers and unlocks an encrypted folder whose container was locked under an earlier Master Password or Recovery Key.
+        /// Extracts the original VMK from the container using the provided previous credential, restores the files,
+        /// and synchronizes the active Vault Master Key in settings with activeMasterPassword.
+        /// </summary>
+        public (bool success, string message) RecoverAndUnlockFolder(
+            string folderPath, string previousCredential, string? activeMasterPassword = null, bool openInExplorer = true)
+        {
+            var model = _db.GetVaultFolder(folderPath);
+            if (model == null) return (false, "Folder is not registered in Vortex Vault.");
+
+            string payloadPath = model.EncryptedPayloadPath;
+            if (string.IsNullOrEmpty(payloadPath) || !File.Exists(payloadPath))
+            {
+                string inPlace = Path.Combine(model.FolderPath, $"{model.FolderName}.vortexvault");
+                if (File.Exists(inPlace))
+                {
+                    payloadPath = inPlace;
+                    model.EncryptedPayloadPath = inPlace;
+                }
+                else if (Directory.Exists(model.FolderPath))
+                {
+                    var match = Directory.GetFiles(model.FolderPath, "*.vortexvault").FirstOrDefault();
+                    if (match != null)
+                    {
+                        payloadPath = match;
+                        model.EncryptedPayloadPath = match;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(payloadPath) || !File.Exists(payloadPath))
+                return (false, "Encrypted vault container payload is missing.");
+
+            // 1. Extract original VMK from container using previous credential
+            var (extracted, originalVmk, extErr) = _crypto.ExtractVmkFromContainer(payloadPath, previousCredential);
+            if (!extracted)
+            {
+                return (false, "The previous password or recovery key is incorrect and could not unlock this container.");
+            }
+
+            // 2. Clean barrier from folder if exists and clear attributes
+            CleanBarrierFromFolder(model.FolderPath);
+            try
+            {
+                if (Directory.Exists(model.FolderPath))
+                {
+                    var dir = new DirectoryInfo(model.FolderPath);
+                    dir.Attributes &= ~FileAttributes.Hidden;
+                    dir.Attributes &= ~FileAttributes.System;
+                }
+            }
+            catch { }
+
+            // 3. Decrypt container files using the recovered original VMK
+            var (decSuccess, decError) = _crypto.DecryptVaultWithKey(payloadPath, model.FolderPath, originalVmk);
+            if (!decSuccess)
+            {
+                return (false, $"Decryption failed: {decError}");
+            }
+
+            // 4. Synchronize active settings so this original VMK is re-wrapped with activeMasterPassword
+            if (!string.IsNullOrWhiteSpace(activeMasterPassword))
+            {
+                var settings = _db.GetVaultSettings();
+                var (newHash, newSalt) = _crypto.HashPassword(activeMasterPassword);
+                string newWrappedPass = _crypto.WrapMasterKey(originalVmk, activeMasterPassword);
+                settings.PasswordHash = newHash;
+                settings.PasswordSalt = newSalt;
+                settings.WrappedMasterKeyPassword = newWrappedPass;
+
+                // If previous credential was an emergency recovery key, also re-wrap recovery key slot
+                if (VaultCryptoEngine.FormatRecoveryKey(previousCredential).StartsWith("VRTX-", StringComparison.OrdinalIgnoreCase))
+                {
+                    settings.WrappedMasterKeyRecovery = _crypto.WrapMasterKey(originalVmk, previousCredential);
+                    settings.RecoveryKeyHash = _crypto.ComputeRecoveryKeyHash(previousCredential);
+                }
+
+                _db.SaveVaultSettings(settings);
+            }
+
+            _cachedSessionVmk = originalVmk;
+
+            // 5. Clean lock barrier note & hide container
+            CleanBarrierFromFolder(model.FolderPath);
+            try
+            {
+                if (File.Exists(payloadPath))
+                    File.SetAttributes(payloadPath, FileAttributes.Hidden);
+            }
+            catch { }
+
+            // 6. Update database model
+            model.IsLocked = false;
+            model.ProtectionMode = "UNLOCKED";
+            model.LastUnlockedAt = DateTime.UtcNow;
+            _db.SaveVaultFolder(model);
+
+            OnVaultStateChanged?.Invoke();
+
+            if (openInExplorer && Directory.Exists(model.FolderPath))
+            {
+                try { System.Diagnostics.Process.Start("explorer.exe", model.FolderPath); } catch { }
+            }
+
+            return (true, $"'{model.FolderName}' unlocked and recovered successfully! Security settings have been re-synchronized.");
+        }
+
+        /// <summary>
         /// Locks an existing vault folder back down.
         /// </summary>
         public (bool success, string message) LockFolder(string folderPath, string credential)
@@ -493,16 +707,24 @@ namespace Vortex.Core.Vault
             // Only re-encrypt if the folder was actually unlocked and files are present on disk
             if (!model.IsLocked && Directory.Exists(model.FolderPath))
             {
-                // Ensure barrier note is deleted before packing directory to container
                 CleanBarrierFromFolder(model.FolderPath);
 
-                // Create a backup of previous container before updating
-                if (File.Exists(model.EncryptedPayloadPath))
+                string containerFile = model.EncryptedPayloadPath;
+                if (string.IsNullOrEmpty(containerFile) || !File.Exists(containerFile))
                 {
-                    try { File.Copy(model.EncryptedPayloadPath, model.EncryptedPayloadPath + ".bak", true); } catch { }
+                    containerFile = Path.Combine(model.FolderPath, $"{model.FolderName}.vortexvault");
+                    model.EncryptedPayloadPath = containerFile;
                 }
 
-                var (encSuccess, encError, totalBytes, fileCount) = _crypto.EncryptDirectoryWithKey(model.FolderPath, model.EncryptedPayloadPath, vmk);
+                // Create a backup of previous container before updating
+                if (File.Exists(containerFile))
+                {
+                    try { File.Copy(containerFile, containerFile + ".bak", true); } catch { }
+                }
+
+                var settings = _db.GetVaultSettings();
+                var (encSuccess, encError, totalBytes, fileCount) = _crypto.EncryptDirectoryWithKey(
+                    model.FolderPath, containerFile, vmk, settings.WrappedMasterKeyPassword, settings.WrappedMasterKeyRecovery, model.FolderName);
                 if (!encSuccess)
                     return (false, $"Encryption failed: {encError}");
 
@@ -522,6 +744,7 @@ namespace Vortex.Core.Vault
 
         /// <summary>
         /// Emergency rescue: Decrypts any standalone .vortexvault container directly to a specified directory.
+        /// Operates 100% standalone using embedded container keys or fallback derivation.
         /// </summary>
         public (bool success, string message) EmergencyRescueContainer(string containerFilePath, string targetDirectory, string credential)
         {
@@ -531,7 +754,11 @@ namespace Vortex.Core.Vault
             if (!Directory.Exists(targetDirectory))
                 Directory.CreateDirectory(targetDirectory);
 
-            // 1. Try VMK if authenticated
+            // 1. Try direct self-contained unwrap / legacy derivation
+            var (dirSuccess, dirErr) = _crypto.DecryptVaultToDirectory(containerFilePath, targetDirectory, credential);
+            if (dirSuccess) return (true, "Container decrypted successfully.");
+
+            // 2. Try VMK from active DB session if authenticated
             var (auth, vmk, _) = ResolveVaultMasterKey(credential);
             if (auth)
             {
@@ -539,25 +766,57 @@ namespace Vortex.Core.Vault
                 if (vmkSuccess) return (true, "Container decrypted successfully using Master Key.");
             }
 
-            // 2. Try direct credential derivation
-            var (dirSuccess, dirErr) = _crypto.DecryptVaultToDirectory(containerFilePath, targetDirectory, credential);
-            if (dirSuccess) return (true, "Container decrypted successfully.");
-
             return (false, $"Rescue failed: {dirErr}");
         }
 
         /// <summary>
         /// Locks all active vault folders immediately.
+        /// Uses cached session master key to safely re-encrypt any modified files before locking.
         /// </summary>
         public void LockAllVaults(string reason = "Manual Lock")
         {
             var vaults = _db.GetVaultFolders().Where(f => !f.IsLocked).ToList();
+            var settings = _db.GetVaultSettings();
+
             foreach (var v in vaults)
             {
+                string containerFile = v.EncryptedPayloadPath;
+                if (string.IsNullOrEmpty(containerFile) || !File.Exists(containerFile))
+                {
+                    containerFile = Path.Combine(v.FolderPath, $"{v.FolderName}.vortexvault");
+                    v.EncryptedPayloadPath = containerFile;
+                }
+
+                // If we have active session key and folder exists with files, re-encrypt safely
+                if (_cachedSessionVmk != null && Directory.Exists(v.FolderPath))
+                {
+                    try
+                    {
+                        CleanBarrierFromFolder(v.FolderPath);
+                        if (File.Exists(containerFile))
+                        {
+                            try { File.Copy(containerFile, containerFile + ".bak", true); } catch { }
+                        }
+                        var (encSuccess, _, totalBytes, fileCount) = _crypto.EncryptDirectoryWithKey(
+                            v.FolderPath, containerFile, _cachedSessionVmk, settings.WrappedMasterKeyPassword, settings.WrappedMasterKeyRecovery, v.FolderName);
+                        if (encSuccess)
+                        {
+                            v.TotalSizeBytes = totalBytes;
+                            v.FileCount = fileCount;
+                        }
+                    }
+                    catch { }
+                }
+
                 v.IsLocked = true;
                 v.ProtectionMode = v.IsStealth ? "STEALTH" : "LOCKED_VISIBLE";
                 _db.SaveVaultFolder(v);
-                ApplyLockToDisk(v);
+
+                // Only wipe disk contents if we have an encrypted container verified on disk
+                if (!string.IsNullOrEmpty(v.EncryptedPayloadPath) && File.Exists(v.EncryptedPayloadPath))
+                {
+                    ApplyLockToDisk(v);
+                }
             }
 
             OnAutoLockTriggered?.Invoke(reason);
@@ -566,29 +825,66 @@ namespace Vortex.Core.Vault
 
         /// <summary>
         /// Safely removes a folder from protection and restores normal unencrypted folder.
+        /// Guaranteed to purge the entry from Vault and UI even if files are missing or container is corrupted.
         /// </summary>
         public (bool success, string message) RemoveFromVault(string folderPath, string credential)
         {
             var model = _db.GetVaultFolder(folderPath);
-            if (model == null) return (false, "Folder not found in Vault.");
+            if (model == null)
+            {
+                _db.DeleteVaultFolder(folderPath);
+                OnVaultStateChanged?.Invoke();
+                return (true, "Folder removed from Vault.");
+            }
 
-            if (!Authenticate(credential))
+            if (model.IsLocked && !Authenticate(credential))
                 return (false, "Authentication failed. Incorrect Master Password or Recovery Key.");
 
             if (model.IsLocked)
             {
-                var (unlocked, msg) = UnlockFolder(folderPath, credential, openInExplorer: false);
-                if (!unlocked) return (false, msg);
+                try
+                {
+                    var (unlocked, msg) = UnlockFolder(folderPath, credential, openInExplorer: false);
+                    if (!unlocked)
+                    {
+                        return (false, $"Cannot remove folder: Unlock failed ({msg}). The encrypted container was preserved on disk to prevent data loss.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Cannot remove folder: {ex.Message}. Container was preserved.");
+                }
             }
 
             // Clean container file and backup
-            if (!string.IsNullOrEmpty(model.EncryptedPayloadPath) && File.Exists(model.EncryptedPayloadPath))
+            try
             {
-                try { File.Delete(model.EncryptedPayloadPath); } catch { }
-                try { File.Delete(model.EncryptedPayloadPath + ".bak"); } catch { }
+                if (!string.IsNullOrEmpty(model.EncryptedPayloadPath) && File.Exists(model.EncryptedPayloadPath))
+                {
+                    File.Delete(model.EncryptedPayloadPath);
+                    if (File.Exists(model.EncryptedPayloadPath + ".bak")) File.Delete(model.EncryptedPayloadPath + ".bak");
+                }
             }
+            catch { }
+
+            try
+            {
+                if (Directory.Exists(model.FolderPath))
+                {
+                    string inPlaceDefault = Path.Combine(model.FolderPath, $"{model.FolderName}.vortexvault");
+                    if (File.Exists(inPlaceDefault)) File.Delete(inPlaceDefault);
+                    if (File.Exists(inPlaceDefault + ".bak")) File.Delete(inPlaceDefault + ".bak");
+
+                    CleanBarrierFromFolder(model.FolderPath);
+                    var dir = new DirectoryInfo(model.FolderPath);
+                    dir.Attributes &= ~FileAttributes.Hidden;
+                    dir.Attributes &= ~FileAttributes.System;
+                }
+            }
+            catch { }
 
             _db.DeleteVaultFolder(folderPath);
+            _db.DeleteVaultFolder(model.FolderPath);
             OnVaultStateChanged?.Invoke();
 
             return (true, $"'{model.FolderName}' has been removed from Vault protection and restored to normal.");
@@ -602,11 +898,11 @@ namespace Vortex.Core.Vault
 
                 if (model.IsStealth)
                 {
-                    // Clean barrier note and wipe directory contents from clear view
+                    // Clean barrier note and wipe plain directory contents from clear view
                     CleanBarrierFromFolder(model.FolderPath);
                     WipeDirectoryFilesSafe(model.FolderPath);
 
-                    // Apply Hidden + System attributes to make it invisible in Explorer & CMD
+                    // Apply Hidden + System attributes to make the folder invisible in Explorer & CMD
                     var dir = new DirectoryInfo(model.FolderPath);
                     dir.Attributes |= FileAttributes.Hidden | FileAttributes.System;
                 }
@@ -617,8 +913,18 @@ namespace Vortex.Core.Vault
                     dir.Attributes &= ~FileAttributes.Hidden;
                     dir.Attributes &= ~FileAttributes.System;
 
-                    // Wipe plain files and create locked barrier note
+                    // Wipe plain files while preserving in-place .vortexvault container
                     WipeDirectoryFilesSafe(model.FolderPath);
+
+                    // Ensure in-place container is visible to the user
+                    if (!string.IsNullOrEmpty(model.EncryptedPayloadPath) && File.Exists(model.EncryptedPayloadPath))
+                    {
+                        try { File.SetAttributes(model.EncryptedPayloadPath, FileAttributes.Normal); } catch { }
+                    }
+
+                    string containerName = !string.IsNullOrEmpty(model.EncryptedPayloadPath)
+                        ? Path.GetFileName(model.EncryptedPayloadPath)
+                        : $"{model.FolderName}.vortexvault";
 
                     string lockNote = Path.Combine(model.FolderPath, "🔒_LOCKED_BY_VORTEX_VAULT.txt");
                     File.WriteAllText(lockNote,
@@ -626,10 +932,14 @@ namespace Vortex.Core.Vault
                         "           🛡️ PROTECTED BY VORTEX ZERO-TRUST VAULT        \n" +
                         "==========================================================\n\n" +
                         "This directory has been encrypted and locked with AES-256-GCM.\n" +
-                        "All files are sealed inside a secure encrypted container.\n\n" +
+                        $"All files are sealed inside the secure in-place container:\n" +
+                        $"  -> {containerName}\n\n" +
+                        "PORTABILITY NOTICE:\n" +
+                        "This container is 100% self-contained. You can move or copy this entire\n" +
+                        "folder or the .vortexvault file to any drive, USB, or computer.\n\n" +
                         "To view or modify files:\n" +
-                        "1. Open Vortex System Guardian (or double-click / right-click this folder).\n" +
-                        "2. Enter your Master Password when prompted.\n\n" +
+                        "1. Open Vortex System Guardian (or use '🛟 Standalone Rescue').\n" +
+                        "2. Enter your Master Password or Emergency Recovery Key.\n\n" +
                         $"Protected Folder: {model.FolderName}\n" +
                         $"Status: Sealed ({model.FileCount} files, {model.SizeFormatted})\n");
                 }
@@ -656,6 +966,9 @@ namespace Vortex.Core.Vault
                 foreach (var file in dir.GetFiles())
                 {
                     if (file.FullName.Equals(lockNote, StringComparison.OrdinalIgnoreCase)) continue;
+                    // CRITICAL: Preserve the in-place .vortexvault and .vortexvault.bak container files!
+                    if (file.Extension.Equals(".vortexvault", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (file.FullName.EndsWith(".vortexvault.bak", StringComparison.OrdinalIgnoreCase)) continue;
                     try { file.Delete(); } catch { }
                 }
                 foreach (var subDir in dir.GetDirectories())

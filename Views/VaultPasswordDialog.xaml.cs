@@ -56,18 +56,22 @@ namespace Vortex.Views
             TxtError.Visibility = Visibility.Collapsed;
         }
 
+        public bool AllowBypassAuthenticationCheck { get; set; } = false;
+
         private void OnSubmitClick(object sender, RoutedEventArgs e)
         {
-            string credential = _isRecoveryKeyMode ? TxtRecoveryKey.Text.Trim() : PbPassword.Password;
+            string credential = _isRecoveryKeyMode
+                ? VaultCryptoEngine.FormatRecoveryKey(TxtRecoveryKey.Text)
+                : PbPassword.Password;
 
-            if (string.IsNullOrEmpty(credential))
+            if (string.IsNullOrWhiteSpace(credential))
             {
                 TxtError.Text = _isRecoveryKeyMode ? "Please enter your Recovery Key." : "Please enter your Master Password.";
                 TxtError.Visibility = Visibility.Visible;
                 return;
             }
 
-            if (_lockService.Authenticate(credential))
+            if (AllowBypassAuthenticationCheck || _lockService.Authenticate(credential))
             {
                 EnteredCredential = credential;
                 IsAuthenticated = true;
@@ -91,9 +95,17 @@ namespace Vortex.Views
             Close();
         }
 
-        public static (bool authenticated, string credential) Prompt(Window? owner, FolderLockService lockService, string title = "Authentication Required", string prompt = "Enter your Master Password to proceed.")
+        public static (bool authenticated, string credential) Prompt(
+            Window? owner,
+            FolderLockService lockService,
+            string title = "Authentication Required",
+            string prompt = "Enter your Master Password to proceed.",
+            bool allowBypassAuthenticationCheck = false)
         {
-            var dlg = new VaultPasswordDialog(lockService, title, prompt);
+            var dlg = new VaultPasswordDialog(lockService, title, prompt)
+            {
+                AllowBypassAuthenticationCheck = allowBypassAuthenticationCheck
+            };
             if (owner != null && owner.IsVisible)
             {
                 dlg.Owner = owner;

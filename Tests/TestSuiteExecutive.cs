@@ -46,16 +46,34 @@ namespace Vortex.Tests
                 FolderLockTests.RunAll();
             });
 
-            // 4. XAML Resource Graph Integrity Tests
+            // 4. Business Logic, Boundaries, Concurrency & Security Tests
+            TestRunner.ExecuteGroup("Functional, Boundary, Concurrency & Tamper-Resistance Tests", () =>
+            {
+                BusinessLogicAndEdgeCaseTests.RunAll();
+            });
+
+            // 5. XAML Resource Graph Integrity Tests
             TestRunner.ExecuteGroup("XAML Resource Graph & StaticResource Integrity Tests", () =>
             {
                 XamlIntegrityTests.RunAll();
             });
 
-            // 5. WPF STA Application & View Initialization Tests
+            // 6. WPF STA Application & View Initialization Tests
             TestRunner.ExecuteGroup("WPF STA Application & View Context Tests", () =>
             {
                 WpfStartupTests.RunAll();
+            });
+
+            // 7. UI, UX, Themes, High-DPI & Accessibility Tests
+            TestRunner.ExecuteGroup("UI, UX, High-DPI & Accessibility Tests", () =>
+            {
+                UiAndAccessibilityTests.RunAll();
+            });
+
+            // 8. Performance, Benchmarks & Memory Soak Tests
+            TestRunner.ExecuteGroup("Performance, Benchmarks & Memory Soak Tests", () =>
+            {
+                PerformanceAndResourceTests.RunAll();
             });
 
             totalSw.Stop();
