@@ -1,7 +1,27 @@
+# Build & Compiler Artifacts
 bin/
 obj/
+**/bin/
+**/obj/
+staging/
+
+# Local .NET & CLI Caches
 .cli/
+.dotnet/
 .packages/
+scratch/
+
+# Temporary / Scratch Files
 *.user
 *.suo
-.dotnet/
+*.log
+*.tmp
+*.db
+*.bak
+*.vortexvault
+
+# Installer Artifacts
+/VortexSetup.exe
+Installer/Setup/package.zip
+Installer/Payload/
+
