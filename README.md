@@ -11,9 +11,9 @@
 [![Framework](https://img.shields.io/badge/framework-.NET%2010.0%20%28WPF%29-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com)
 [![C#](https://img.shields.io/badge/language-C%23%2013-239120?style=flat-square&logo=csharp)](https://docs.microsoft.com/dotnet/csharp/)
 [![Database](https://img.shields.io/badge/storage-SQLite%203-003B57?style=flat-square&logo=sqlite)](https://sqlite.org)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
 
-[**Technical Documentation**](TECHNICAL_DOCUMENTATION.md) • [**Architecture Plan**](x_fix_architecture_and_implementation_plan.md) • [**Download Setup**](Release_Installer/VortexSetup.exe)
+[**Technical Documentation**](TECHNICAL_DOCUMENTATION.md) • [**Download Setup**](Release_Installer/VortexSetup.exe)
 
 </div>
 
@@ -205,4 +205,4 @@ This executes the 6-stage build pipeline:
 ---
 
 ## 📄 License
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 (GPLv3) — see the [LICENSE](LICENSE) file for details.
