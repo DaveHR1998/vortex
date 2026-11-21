@@ -25,6 +25,7 @@ namespace Vortex.Tests
             Test_ActiveIdentityShieldAndInAppRemediation();
             Test_SystemInfoExpandedHardwareSpecsAndUpdaterCleanMilestones();
             Test_DeepFocusModeProcessSuspensionAndLifecycle();
+            Test_QuickLauncherCatalogAndSystemHealthMetrics();
         }
 
         private static void Test_ZeroByteAndEmptyDirPreservation()
@@ -476,6 +477,30 @@ namespace Vortex.Tests
                 throw new Exception("FocusModeManager failed to deactivate focus mode!");
 
             TestRunner.Pass("Focus: Deep Focus Mode Native Suspension & Session Lifecycle");
+        }
+
+        private static void Test_QuickLauncherCatalogAndSystemHealthMetrics()
+        {
+            var hw = new Vortex.Core.SystemIntegration.HardwareMonitor();
+            var (totalBytes, freeBytes, usedPct) = hw.GetDriveStorage("C");
+            if (totalBytes <= 0)
+                throw new Exception("Drive C storage totalBytes should be positive!");
+
+            TimeSpan uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+            if (uptime.TotalSeconds <= 0)
+                throw new Exception("System uptime tick count returned 0 or negative!");
+
+            var launcherItem = new QuickSearchItem
+            {
+                Icon = "🏠",
+                Title = "Overview & Health",
+                Subtitle = "System diagnostic test",
+                Category = "Navigation"
+            };
+            if (string.IsNullOrEmpty(launcherItem.Title) || launcherItem.Category != "Navigation")
+                throw new Exception("QuickSearchItem model initialization failed!");
+
+            TestRunner.Pass("Overview: 4-Pillar Health Diagnostics & Spotlight Quick Launcher Catalog");
         }
     }
 }

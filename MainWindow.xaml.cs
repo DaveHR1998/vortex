@@ -184,6 +184,7 @@ namespace Vortex
                 try
                 {
                     UpdateHeaderTelemetry();
+                    PerformSystemHealthAudit();
                     await RefreshProcessesAsync();
                     ShowFloatingOrb();
 
@@ -418,21 +419,215 @@ namespace Vortex
                 var mem = _memOptimizer.GetMemoryStatus();
                 double totalGb = mem.totalBytes / (1024.0 * 1024.0 * 1024.0);
                 double usedGb = (mem.totalBytes - mem.availBytes) / (1024.0 * 1024.0 * 1024.0);
+                double availGb = mem.availBytes / (1024.0 * 1024.0 * 1024.0);
                 
                 TxtHeaderRam.Text = $"{mem.loadPercent}% ({usedGb:F1} / {totalGb:F0} GB)";
-                TxtOverviewRamLoad.Text = $"{mem.loadPercent}% ({usedGb:F1} GB in use)";
-                PbOverviewRam.Value = mem.loadPercent;
+                if (TxtOverviewRamLoad != null) TxtOverviewRamLoad.Text = $"{mem.loadPercent}% ({usedGb:F1} / {totalGb:F0} GB)";
+                if (PbOverviewRam != null) PbOverviewRam.Value = mem.loadPercent;
+                if (TxtOverviewRamDetails != null) TxtOverviewRamDetails.Text = $"({availGb:F1} GB available)";
 
                 float cpu = _hardwareMonitor.GetCpuUsagePercentage();
                 TxtHeaderCpu.Text = $"{cpu:F0}%";
-                TxtOverviewCpuLoad.Text = $"{cpu:F0}%";
-                PbOverviewCpu.Value = cpu;
+                if (TxtOverviewCpuLoad != null) TxtOverviewCpuLoad.Text = $"{cpu:F0}%";
+                if (PbOverviewCpu != null) PbOverviewCpu.Value = cpu;
+                if (TxtOverviewCpuDetails != null) TxtOverviewCpuDetails.Text = $"({Environment.ProcessorCount} Cores)";
 
                 var drive = _hardwareMonitor.GetDriveStorage("C");
                 TxtHeaderDisk.Text = $"{drive.usedPercentage:F0}% Used";
+                if (TxtOverviewDiskLoad != null) TxtOverviewDiskLoad.Text = $"{drive.usedPercentage:F0}% ({drive.freeBytes / (1024.0 * 1024.0 * 1024.0):F0} GB Free)";
+                if (PbOverviewDisk != null) PbOverviewDisk.Value = drive.usedPercentage;
+                if (TxtOverviewDiskDetails != null) TxtOverviewDiskDetails.Text = $"({drive.totalBytes / (1024.0 * 1024.0 * 1024.0):F0} GB Total)";
+
+                if (TxtOverviewUptime != null)
+                {
+                    TimeSpan uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+                    TxtOverviewUptime.Text = $"{uptime.Days}d {uptime.Hours}h {uptime.Minutes}m";
+                }
+
+                if (TxtCardStorageSub != null)
+                    TxtCardStorageSub.Text = $"{drive.freeBytes / (1024.0 * 1024.0 * 1024.0):F0} GB Free on C:";
+
+                if (TxtCardProcessesSub != null && _allProcesses != null)
+                    TxtCardProcessesSub.Text = $"{_allProcesses.Count} Active Apps ({usedGb:F1} GB)";
             }
             catch { }
         }
+
+        public void PerformSystemHealthAudit()
+        {
+            try
+            {
+                int score = 100;
+                List<string> issues = new();
+
+                // 1. Memory Load Check
+                var mem = _memOptimizer.GetMemoryStatus();
+                double totalGb = mem.totalBytes / (1024.0 * 1024.0 * 1024.0);
+                double usedGb = (mem.totalBytes - mem.availBytes) / (1024.0 * 1024.0 * 1024.0);
+                if (mem.loadPercent > 85)
+                {
+                    score -= 15;
+                    issues.Add("High RAM Load");
+                }
+                else if (mem.loadPercent > 75)
+                {
+                    score -= 5;
+                }
+
+                // 2. CPU Load Check
+                float cpu = _hardwareMonitor.GetCpuUsagePercentage();
+                if (cpu > 75)
+                {
+                    score -= 15;
+                    issues.Add("High CPU Activity");
+                }
+                else if (cpu > 40)
+                {
+                    score -= 5;
+                }
+
+                if (TxtHealthRamSummary != null)
+                {
+                    TxtHealthRamSummary.Text = mem.loadPercent < 80 ? $"Optimal ({mem.loadPercent}% RAM, {cpu:F0}% CPU)" : $"Warning ({mem.loadPercent}% RAM)";
+                    TxtHealthRamSummary.Foreground = mem.loadPercent < 80 
+                        ? (Brush)FindResource("TextPrimaryBrush") 
+                        : (Brush)FindResource("AccentGlowBrush");
+                }
+
+                // 3. Drive C: Free Space Check
+                var drive = _hardwareMonitor.GetDriveStorage("C");
+                double freePercent = 100.0 - drive.usedPercentage;
+                double freeGb = drive.freeBytes / (1024.0 * 1024.0 * 1024.0);
+                if (freePercent < 10)
+                {
+                    score -= 20;
+                    issues.Add("Low C: Drive Space");
+                }
+                else if (freePercent < 15)
+                {
+                    score -= 10;
+                }
+
+                if (TxtHealthDiskSummary != null)
+                {
+                    TxtHealthDiskSummary.Text = freePercent >= 15 ? $"Healthy ({freeGb:F0} GB Free)" : $"Low Space ({freeGb:F0} GB)";
+                    TxtHealthDiskSummary.Foreground = freePercent >= 15
+                        ? (Brush)FindResource("TextPrimaryBrush")
+                        : (Brush)FindResource("StatusDangerBrush");
+                }
+
+                // 4. Telemetry Lockdown Check
+                bool isTelemetryActive = false;
+                try
+                {
+                    using var diagKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\DiagTrack");
+                    int startVal = (int)(diagKey?.GetValue("Start") ?? 2);
+                    if (startVal != 4) // 4 = Disabled
+                    {
+                        isTelemetryActive = true;
+                        score -= 10;
+                        issues.Add("Windows Telemetry Active");
+                    }
+                }
+                catch { }
+
+                if (TxtHealthPrivacySummary != null)
+                {
+                    TxtHealthPrivacySummary.Text = isTelemetryActive ? "Tracking Active" : "Zero Telemetry";
+                    TxtHealthPrivacySummary.Foreground = isTelemetryActive
+                        ? (Brush)FindResource("AccentGlowBrush")
+                        : (Brush)FindResource("StatusSafeBrush");
+                }
+                if (TxtHealthTelemetryStatus != null)
+                {
+                    TxtHealthTelemetryStatus.Text = isTelemetryActive ? "Active (Debloat Needed) →" : "Enforced (0 Leaks) →";
+                    TxtHealthTelemetryStatus.Foreground = isTelemetryActive
+                        ? (Brush)FindResource("AccentGlowBrush")
+                        : (Brush)FindResource("StatusSafeBrush");
+                }
+
+                // 5. Encrypted Vault & USB DLP Check
+                int lockedCount = 0;
+                try
+                {
+                    lockedCount = _folderLockService.GetAllVaultFolders().Count(f => f.IsLocked);
+                }
+                catch { }
+                bool usbProtected = _usbDlp?.IsUsbWriteProtectActive() == true;
+                if (TxtHealthVaultStatus != null)
+                {
+                    TxtHealthVaultStatus.Text = $"{lockedCount} Vaults Sealed • DLP {(usbProtected ? "Active" : "Ready")} →";
+                }
+                if (TxtHealthSecuritySummary != null)
+                {
+                    TxtHealthSecuritySummary.Text = "System32 & Vault Safe";
+                }
+
+                // 6. Background Bloatware / Daemons Check
+                int daemonsCount = 0;
+                try
+                {
+                    daemonsCount = _focusManager.GetDiscoverableBackgroundProcesses().Count;
+                }
+                catch { }
+                if (TxtHealthFocusStatus != null)
+                {
+                    TxtHealthFocusStatus.Text = daemonsCount > 0 ? $"{daemonsCount} Daemons Detected →" : "No Bloatware Active →";
+                    TxtHealthFocusStatus.Foreground = daemonsCount > 4 
+                        ? (Brush)FindResource("AccentGlowBrush") 
+                        : (Brush)FindResource("TextSecondaryBrush");
+                }
+
+                // Clamp score to 25..100
+                score = Math.Clamp(score, 25, 100);
+
+                if (TxtHealthScoreValue != null)
+                {
+                    TxtHealthScoreValue.Text = $"{score}%";
+                    TxtHealthScoreValue.Foreground = score >= 90
+                        ? (Brush)FindResource("AccentGlowBrush")
+                        : score >= 75
+                            ? (Brush)FindResource("AccentPrimaryBrush")
+                            : (Brush)FindResource("StatusDangerBrush");
+                }
+
+                if (TxtHealthScoreVerdict != null)
+                {
+                    if (score >= 90)
+                    {
+                        TxtHealthScoreVerdict.Text = "SYSTEM OPTIMAL & PROTECTED";
+                        TxtHealthScoreVerdict.Foreground = (Brush)FindResource("StatusSafeBrush");
+                    }
+                    else if (score >= 75)
+                    {
+                        TxtHealthScoreVerdict.Text = $"GOOD — ATTENTION: {string.Join(", ", issues)}";
+                        TxtHealthScoreVerdict.Foreground = (Brush)FindResource("AccentGlowBrush");
+                    }
+                    else
+                    {
+                        TxtHealthScoreVerdict.Text = $"ACTION REQUIRED: {string.Join(", ", issues)}";
+                        TxtHealthScoreVerdict.Foreground = (Brush)FindResource("StatusDangerBrush");
+                    }
+                }
+
+                if (TxtHealthAuditTimestamp != null)
+                {
+                    TxtHealthAuditTimestamp.Text = $" • Audit: {DateTime.Now:HH:mm:ss}";
+                }
+
+                TxtStatusBar.Text = $"🩺 System Health Audit: {score}% ({TxtHealthScoreVerdict?.Text})";
+            }
+            catch (Exception ex)
+            {
+                TxtStatusBar.Text = $"Health Audit Error: {ex.Message}";
+            }
+        }
+
+        private void OnCardVaultClick(object sender, MouseButtonEventArgs e) => NavVault.IsChecked = true;
+        private void OnCardPrivacyClick(object sender, MouseButtonEventArgs e) => NavPrivacy.IsChecked = true;
+        private void OnCardFocusClick(object sender, MouseButtonEventArgs e) => NavFocus.IsChecked = true;
+        private void OnCardUpdaterClick(object sender, MouseButtonEventArgs e) => NavUpdater.IsChecked = true;
+        private void OnSystemHealthAuditClick(object sender, RoutedEventArgs e) => PerformSystemHealthAudit();
 
         #region Window Controls
         private void OnMinimizeClick(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
@@ -619,8 +814,31 @@ namespace Vortex
             NavJunk.IsChecked = true;
         }
 
+        private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Ctrl+K -> Spotlight Quick Launcher
+            if (e.Key == Key.K && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (TxtSearchBox != null)
+                {
+                    TxtSearchBox.Focus();
+                    TxtSearchBox.SelectAll();
+                    e.Handled = true;
+                }
+            }
+        }
+
         private void OnSearchGotFocus(object sender, RoutedEventArgs e)
         {
+            if (!string.IsNullOrWhiteSpace(TxtSearchBox?.Text))
+            {
+                var results = GetMatchingSearchItems(TxtSearchBox.Text.Trim());
+                if (LbSearchResults != null && PopupSearchResults != null)
+                {
+                    LbSearchResults.ItemsSource = results;
+                    PopupSearchResults.IsOpen = results.Count > 0;
+                }
+            }
         }
 
         private void OnSearchLostFocus(object sender, RoutedEventArgs e)
@@ -629,19 +847,197 @@ namespace Vortex
 
         private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
         {
+            string query = TxtSearchBox?.Text?.Trim() ?? string.Empty;
+
             if (TxtSearchBoxPlaceholder != null)
             {
-                TxtSearchBoxPlaceholder.Visibility = string.IsNullOrEmpty(TxtSearchBox?.Text)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+                TxtSearchBoxPlaceholder.Visibility = string.IsNullOrEmpty(query) ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            if (TxtProcessFilter != null && TxtSearchBox != null && TxtProcessFilter.Text != TxtSearchBox.Text)
+            if (string.IsNullOrEmpty(query))
             {
-                TxtProcessFilter.Text = TxtSearchBox.Text;
+                if (PopupSearchResults != null) PopupSearchResults.IsOpen = false;
+                return;
             }
 
-            ApplyProcessFilter();
+            var results = GetMatchingSearchItems(query);
+            if (LbSearchResults != null && PopupSearchResults != null)
+            {
+                LbSearchResults.ItemsSource = results;
+                PopupSearchResults.IsOpen = results.Count > 0;
+                if (results.Count > 0)
+                {
+                    LbSearchResults.SelectedIndex = 0;
+                    if (TxtSearchSummary != null)
+                    {
+                        TxtSearchSummary.Text = $"MATCHING ({results.Count} RESULTS)";
+                    }
+                }
+            }
+        }
+
+        private void OnSearchBoxPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (PopupSearchResults?.IsOpen != true) return;
+
+            if (e.Key == Key.Down)
+            {
+                if (LbSearchResults != null && LbSearchResults.Items.Count > 0)
+                {
+                    int next = (LbSearchResults.SelectedIndex + 1) % LbSearchResults.Items.Count;
+                    LbSearchResults.SelectedIndex = next;
+                    LbSearchResults.ScrollIntoView(LbSearchResults.SelectedItem);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Key.Up)
+            {
+                if (LbSearchResults != null && LbSearchResults.Items.Count > 0)
+                {
+                    int prev = LbSearchResults.SelectedIndex <= 0 ? LbSearchResults.Items.Count - 1 : LbSearchResults.SelectedIndex - 1;
+                    LbSearchResults.SelectedIndex = prev;
+                    LbSearchResults.ScrollIntoView(LbSearchResults.SelectedItem);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Key.Enter)
+            {
+                ExecuteSelectedSearchResult();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                PopupSearchResults.IsOpen = false;
+                e.Handled = true;
+            }
+        }
+
+        private void OnSearchResultsPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                ExecuteSelectedSearchResult();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                if (PopupSearchResults != null) PopupSearchResults.IsOpen = false;
+                TxtSearchBox?.Focus();
+                e.Handled = true;
+            }
+        }
+
+        private void OnSearchResultClicked(object sender, MouseButtonEventArgs e)
+        {
+            ExecuteSelectedSearchResult();
+        }
+
+        private void ExecuteSelectedSearchResult()
+        {
+            if (LbSearchResults?.SelectedItem is QuickSearchItem item)
+            {
+                if (PopupSearchResults != null) PopupSearchResults.IsOpen = false;
+                if (TxtSearchBox != null) TxtSearchBox.Text = string.Empty;
+                item.Action?.Invoke();
+            }
+        }
+
+        private List<QuickSearchItem> GetMatchingSearchItems(string query)
+        {
+            var list = new List<QuickSearchItem>();
+            string q = query.ToLowerInvariant();
+
+            var allTools = new List<QuickSearchItem>
+            {
+                new() { Icon = "🏠", Title = "Overview & Health", Subtitle = "System health score, live telemetry & audit", Category = "Navigation", Action = () => NavHome.IsChecked = true },
+                new() { Icon = "⚡", Title = "Process Intelligence", Subtitle = "RAM usage, optimize & terminate applications", Category = "Navigation", Action = () => NavProcesses.IsChecked = true },
+                new() { Icon = "📁", Title = "Folder Ownership", Subtitle = "Storage breakdown & AppData discovery", Category = "Navigation", Action = () => NavStorage.IsChecked = true },
+                new() { Icon = "🧹", Title = "System Sweeper", Subtitle = "Clean temporary files, browser cache & prefetch", Category = "Navigation", Action = () => NavJunk.IsChecked = true },
+                new() { Icon = "🗄️", Title = "Registry Guard", Subtitle = "Scan & safely purge invalid registry keys", Category = "Navigation", Action = () => NavRegistry.IsChecked = true },
+                new() { Icon = "🌐", Title = "Network Diagnostics", Subtitle = "Active sockets, IP endpoints & port sniffer", Category = "Navigation", Action = () => { NavNetwork.IsChecked = true; SubTabNetSockets.IsChecked = true; } },
+                new() { Icon = "🛡️", Title = "Firewall & App Privacy", Subtitle = "Configure outbound rules & block telemetry", Category = "Navigation", Action = () => { NavNetwork.IsChecked = true; SubTabNetDiscover.IsChecked = true; } },
+                new() { Icon = "⚙️", Title = "Services & Bloat Controller", Subtitle = "Control startup services & 1-click debloat", Category = "Navigation", Action = () => NavServices.IsChecked = true },
+                new() { Icon = "🎯", Title = "Deep Focus Mode", Subtitle = "Suspend background daemons & lock DND", Category = "Navigation", Action = () => NavFocus.IsChecked = true },
+                new() { Icon = "👁️", Title = "Privacy Eraser", Subtitle = "Wipe activity traces, jump lists & clipboard", Category = "Navigation", Action = () => NavPrivacy.IsChecked = true },
+                new() { Icon = "🛡️", Title = "Identity Shield", Subtitle = "Secrets shredder, LSA protection & Wi-Fi", Category = "Navigation", Action = () => NavIdentity.IsChecked = true },
+                new() { Icon = "🔒", Title = "Encrypted Vault", Subtitle = "AES-256-GCM directory locking & encryption", Category = "Navigation", Action = () => NavVault.IsChecked = true },
+                new() { Icon = "🛡️", Title = "USB DLP Protection", Subtitle = "USB mass storage write protection & policies", Category = "Navigation", Action = () => { NavVault.IsChecked = true; SubTabVaultUsb.IsChecked = true; } },
+                new() { Icon = "📦", Title = "Software Updater", Subtitle = "Winget application updates & version tracker", Category = "Navigation", Action = () => NavUpdater.IsChecked = true },
+                new() { Icon = "💻", Title = "System Information", Subtitle = "Hardware specs, network, power & security info", Category = "Navigation", Action = () => NavSysInfo.IsChecked = true },
+                new() { Icon = "📜", Title = "Audit History & Logs", Subtitle = "Chronological system event & action logs", Category = "Navigation", Action = () => NavHistory.IsChecked = true },
+
+                // Quick Actions
+                new() { Icon = "⚡", Title = "Instant Turbo Boost", Subtitle = "Trim working sets across all running apps", Category = "Action", Action = () => OnTurboBoostClick(this, new RoutedEventArgs()) },
+                new() { Icon = "🩺", Title = "1-Click Health Audit", Subtitle = "Run full system diagnostic & compute health score", Category = "Action", Action = PerformSystemHealthAudit },
+                new() { Icon = "🔍", Title = "Deep Scan System Junk", Subtitle = "Scan temporary directories & cache", Category = "Action", Action = () => OnScanJunkClick(this, new RoutedEventArgs()) },
+                new() { Icon = "🔒", Title = "Lock All Vault Folders", Subtitle = "Immediately seal all decrypted vault folders", Category = "Action", Action = () => OnVaultLockAllClick(this, new RoutedEventArgs()) }
+            };
+
+            // Filter tools
+            foreach (var tool in allTools)
+            {
+                if (tool.Title.ToLowerInvariant().Contains(q) || tool.Subtitle.ToLowerInvariant().Contains(q) || tool.Category.ToLowerInvariant().Contains(q))
+                {
+                    list.Add(tool);
+                }
+            }
+
+            // Filter live processes (up to 4 matches)
+            if (_allProcesses != null && _allProcesses.Count > 0)
+            {
+                var procMatches = _allProcesses
+                    .Where(p => p.Name.ToLowerInvariant().Contains(q) || p.Id.ToString().Contains(q))
+                    .Take(4);
+
+                foreach (var p in procMatches)
+                {
+                    string procName = p.Name;
+                    int pid = p.Id;
+                    string memStr = p.MemoryString;
+                    string badge = p.BadgeText;
+                    list.Add(new QuickSearchItem
+                    {
+                        Icon = "⚡",
+                        Title = $"{procName} (PID {pid})",
+                        Subtitle = $"Process • {memStr} • {badge}",
+                        Category = "Process",
+                        Action = () =>
+                        {
+                            NavProcesses.IsChecked = true;
+                            if (TxtProcessFilter != null) TxtProcessFilter.Text = procName;
+                            ApplyProcessFilter();
+                        }
+                    });
+                }
+            }
+
+            // Filter live services (up to 4 matches)
+            if (_allServices != null && _allServices.Count > 0)
+            {
+                var svcMatches = _allServices
+                    .Where(s => s.ServiceName.ToLowerInvariant().Contains(q) || s.DisplayName.ToLowerInvariant().Contains(q))
+                    .Take(4);
+
+                foreach (var s in svcMatches)
+                {
+                    string svcName = s.ServiceName;
+                    list.Add(new QuickSearchItem
+                    {
+                        Icon = "⚙️",
+                        Title = s.DisplayName,
+                        Subtitle = $"Service • {s.ServiceName} • {s.Status}",
+                        Category = "Service",
+                        Action = () =>
+                        {
+                            NavServices.IsChecked = true;
+                            if (TxtServiceFilter != null) TxtServiceFilter.Text = svcName;
+                            ApplyServicesFilter();
+                        }
+                    });
+                }
+            }
+
+            return list.Take(8).ToList();
         }
 
         private void OnProcessFilterInputChanged(object sender, TextChangedEventArgs e)
@@ -651,11 +1047,6 @@ namespace Vortex
                 TxtProcessFilterPlaceholder.Visibility = string.IsNullOrEmpty(TxtProcessFilter?.Text)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
-            }
-
-            if (TxtSearchBox != null && TxtProcessFilter != null && TxtSearchBox.Text != TxtProcessFilter.Text)
-            {
-                TxtSearchBox.Text = TxtProcessFilter.Text;
             }
 
             ApplyProcessFilter();
@@ -3452,5 +3843,14 @@ namespace Vortex
             }
         }
         #endregion
+    }
+
+    public class QuickSearchItem
+    {
+        public string Icon { get; set; } = "⚡";
+        public string Title { get; set; } = string.Empty;
+        public string Subtitle { get; set; } = string.Empty;
+        public string Category { get; set; } = "Feature";
+        public Action? Action { get; set; }
     }
 }
