@@ -2257,37 +2257,74 @@ namespace Vortex
             _ = ScanIdentityAsync();
         }
 
-        private void OnIdentityActionClick(object sender, RoutedEventArgs e)
+        private async void OnIdentityRemediateClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is IdentityFinding finding)
+            {
+                if (finding.ActionType == "OpenTarget")
+                {
+                    ExecuteShellAction(finding.ActionTarget);
+                    return;
+                }
+
+                bool confirmed = VortexDialogWindow.ShowConfirm(this, "Confirm Identity Remediation",
+                    $"Are you sure you want to perform in-app remediation for:\n\n{finding.Name} ({finding.Category})?\n\nAction: {finding.ActionLabel}",
+                    "Execute Remediation");
+                if (!confirmed) return;
+
+                if (TxtStatusBar != null) TxtStatusBar.Text = $"Remediating {finding.Name}...";
+                var (success, msg) = await Task.Run(() => _identityScanner.Remediate(finding.ActionType, finding.ActionData));
+
+                if (success)
+                {
+                    VortexDialogWindow.ShowSuccess(this, "Identity Remediation Complete", finding.Name, "Success", msg);
+                    _db.LogAudit("IdentityShield", finding.Category, 0, $"Remediated: {finding.Name} ({msg})");
+                }
+                else
+                {
+                    VortexDialogWindow.ShowWarning(this, "Remediation Failed", msg);
+                }
+
+                if (TxtStatusBar != null) TxtStatusBar.Text = msg;
+                _ = ScanIdentityAsync();
+            }
+        }
+
+        private void OnIdentitySecondaryActionClick(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is string target && !string.IsNullOrEmpty(target))
             {
-                try
+                ExecuteShellAction(target);
+            }
+        }
+
+        private void ExecuteShellAction(string target)
+        {
+            try
+            {
+                if (target.StartsWith("ms-settings:"))
                 {
-                    if (target.StartsWith("ms-settings:"))
-                    {
-                        Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
-                    }
-                    else if (Directory.Exists(target))
-                    {
-                        Process.Start(new ProcessStartInfo("explorer.exe", $"\"{target}\"") { UseShellExecute = true });
-                    }
-                    else if (File.Exists(target))
-                    {
-                        Process.Start(new ProcessStartInfo("notepad.exe", $"\"{target}\"") { UseShellExecute = true });
-                    }
-                    else
-                    {
-                        // Supports commands with arguments, like "control.exe keymgr.dll" or "SystemPropertiesAdvanced.exe"
-                        var parts = target.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-                        var fileName = parts[0];
-                        var args = parts.Length > 1 ? parts[1] : string.Empty;
-                        Process.Start(new ProcessStartInfo(fileName, args) { UseShellExecute = true });
-                    }
+                    Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
                 }
-                catch (Exception ex)
+                else if (Directory.Exists(target))
                 {
-                    TxtStatusBar.Text = $"Failed to open: {ex.Message}";
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"\"{target}\"") { UseShellExecute = true });
                 }
+                else if (File.Exists(target))
+                {
+                    Process.Start(new ProcessStartInfo("notepad.exe", $"\"{target}\"") { UseShellExecute = true });
+                }
+                else
+                {
+                    var parts = target.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    var fileName = parts[0];
+                    var args = parts.Length > 1 ? parts[1] : string.Empty;
+                    Process.Start(new ProcessStartInfo(fileName, args) { UseShellExecute = true });
+                }
+            }
+            catch (Exception ex)
+            {
+                if (TxtStatusBar != null) TxtStatusBar.Text = $"Failed to open: {ex.Message}";
             }
         }
         #endregion

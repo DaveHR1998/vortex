@@ -1581,7 +1581,7 @@
                     <ProgressBar x:Name="PbIdentityScan" Grid.Row="1" Height="3" IsIndeterminate="True" Margin="0,0,0,6" Visibility="Collapsed" Foreground="{DynamicResource AccentPrimaryBrush}" Background="Transparent" />
 
                     <Border Grid.Row="2" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
-                        <TextBlock Text="🔒 Identity Shield is read-only — it scans and reports. Use the Action button on each finding to manage it in the appropriate native tool." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                        <TextBlock Text="🛡️ Active Identity Shield — Instantly revoke stored credentials, forget exposed Wi-Fi networks, shred plaintext cloud secrets, and enable OS LSA Protection directly in-app." Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap" />
                     </Border>
 
                     <Border Grid.Row="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
@@ -1599,11 +1599,14 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="Detail" Width="240" DisplayMemberBinding="{Binding Detail}" />
-                                    <GridViewColumn Header="Action" Width="160">
+                                    <GridViewColumn Header="Detail" Width="260" DisplayMemberBinding="{Binding Detail}" />
+                                    <GridViewColumn Header="Action" Width="220">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Content="{Binding ActionLabel}" Style="{StaticResource VortexSecondaryButton}" Click="OnIdentityActionClick" Tag="{Binding ActionTarget}" Padding="8,3" FontSize="11" />
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="{Binding ActionLabel}" Visibility="{Binding PrimaryVisibility}" Style="{StaticResource VortexDangerButton}" Click="OnIdentityRemediateClick" Padding="8,3" FontSize="11" Margin="0,0,6,0" ToolTip="Remediate directly inside Vortex" />
+                                                    <Button Content="{Binding SecondaryActionLabel}" Visibility="{Binding SecondaryVisibility}" Style="{StaticResource VortexSecondaryButton}" Click="OnIdentitySecondaryActionClick" Tag="{Binding SecondaryActionTarget}" Padding="8,3" FontSize="10" ToolTip="Inspect in external viewer" />
+                                                </StackPanel>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>

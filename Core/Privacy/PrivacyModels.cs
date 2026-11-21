@@ -38,13 +38,20 @@ namespace Vortex.Core.Privacy
 
     public class IdentityFinding
     {
-        public string          Category    { get; set; } = string.Empty;
-        public string          Name        { get; set; } = string.Empty;
-        public string          Detail      { get; set; } = string.Empty;
-        public string          Location    { get; set; } = string.Empty;
-        public PrivacyRiskLevel Risk       { get; set; } = PrivacyRiskLevel.Low;
-        public string          ActionLabel { get; set; } = "View";
-        public string          ActionTarget{ get; set; } = string.Empty; // shell target or command
+        public string          Category               { get; set; } = string.Empty;
+        public string          Name                   { get; set; } = string.Empty;
+        public string          Detail                 { get; set; } = string.Empty;
+        public string          Location               { get; set; } = string.Empty;
+        public PrivacyRiskLevel Risk                  { get; set; } = PrivacyRiskLevel.Low;
+        public string          ActionLabel            { get; set; } = "View";
+        public string          ActionTarget           { get; set; } = string.Empty;
+        public string          ActionType             { get; set; } = "OpenTarget"; // RevokeCredential, ForgetWifi, PurgeEnvVar, ShredFile, EnableLsaGuard, OpenTarget
+        public string          ActionData             { get; set; } = string.Empty;
+        public string          SecondaryActionLabel   { get; set; } = string.Empty;
+        public string          SecondaryActionTarget  { get; set; } = string.Empty;
+        public bool            HasSecondaryAction     => !string.IsNullOrEmpty(SecondaryActionLabel);
+        public System.Windows.Visibility SecondaryVisibility => HasSecondaryAction ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        public System.Windows.Visibility PrimaryVisibility => !string.IsNullOrEmpty(ActionLabel) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
 
         public string RiskBadgeText => Risk switch
         {

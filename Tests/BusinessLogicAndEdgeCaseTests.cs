@@ -22,6 +22,7 @@ namespace Vortex.Tests
             Test_BrowserProfileAndUserDataZeroWipeProtection();
             Test_PermanentTelemetryLockdownEngine();
             Test_PrivacyEraserFullSpectrumScanAndSafeClipboardPreservation();
+            Test_ActiveIdentityShieldAndInAppRemediation();
         }
 
         private static void Test_ZeroByteAndEmptyDirPreservation()
@@ -395,6 +396,32 @@ namespace Vortex.Tests
                 throw new Exception("EnableClipboardHistory was turned off or missing!");
 
             TestRunner.Pass("Privacy: Full-Spectrum Activity Trace Eraser & Zero-Clipboard-Disable Guarantee");
+        }
+
+        private static void Test_ActiveIdentityShieldAndInAppRemediation()
+        {
+            var scanner = new Vortex.Core.Privacy.IdentityScanner();
+            var findings = scanner.ScanAll();
+
+            if (findings == null || findings.Count == 0)
+                throw new Exception("IdentityScanner returned empty findings list!");
+
+            // Verify LSA Protection scan item is present
+            var lsaFinding = findings.FirstOrDefault(f => f.Category == "OS Memory Guard");
+            if (lsaFinding == null)
+                throw new Exception("IdentityScanner missing OS Memory Guard / LSA Protection scan!");
+
+            // Test in-app ShredFile on a test secret file
+            string tempSecret = Path.Combine(Path.GetTempPath(), "VortexTestSecret_" + Guid.NewGuid().ToString("N") + ".txt");
+            File.WriteAllText(tempSecret, "MOCK_AWS_SECRET_KEY_1234567890ABCDEF");
+
+            var (shredOk, shredMsg) = scanner.Remediate("ShredFile", tempSecret);
+            if (!shredOk)
+                throw new Exception($"ShredFile remediation failed: {shredMsg}");
+            if (File.Exists(tempSecret))
+                throw new Exception("File was not deleted after ShredFile remediation!");
+
+            TestRunner.Pass("Identity: Active Identity Shield & In-App Remediation Dispatcher");
         }
     }
 }
