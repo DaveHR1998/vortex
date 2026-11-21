@@ -344,7 +344,7 @@ namespace Vortex
             else
             {
                 _focusManager.EnableFocusMode();
-                _trayService?.ShowNotification("Gaming / Focus Mode Active", "Background daemons suspended. System resources dedicated to foreground performance.");
+                _trayService?.ShowNotification("Deep Focus Mode Active", "Background daemons suspended. System resources dedicated to foreground performance.");
             }
         }
 
@@ -569,7 +569,8 @@ namespace Vortex
             }
             else if (NavFocus.IsChecked == true)
             {
-                TxtBreadcrumb.Text = "Gaming & Focus Mode";
+                TxtBreadcrumb.Text = "Deep Focus Mode";
+                RefreshFocusProcessesList();
             }
             else if (NavHistory.IsChecked == true)
             {
@@ -2145,22 +2146,149 @@ namespace Vortex
         }
         #endregion
 
-        #region TAB 7: Gaming & Focus Mode
+        #region TAB 7: Deep Focus Mode
+        private List<FocusProcessCandidate> _focusCandidates = new();
+        private DispatcherTimer? _focusCountdownTimer;
+        private TimeSpan _focusTimeRemaining;
+
+        private void OnFocusDurationChanged(object sender, RoutedEventArgs e)
+        {
+            if (TxtFocusTimer == null || _focusManager.IsFocusModeActive) return;
+
+            int mins = GetSelectedFocusDurationMinutes();
+            if (mins > 0)
+            {
+                TxtFocusTimer.Text = $"{mins:D2}:00";
+                TxtFocusTimerSub.Text = $"Ready for {mins}-minute focus block";
+            }
+            else
+            {
+                TxtFocusTimer.Text = "♾️";
+                TxtFocusTimerSub.Text = "Manual duration (no time limit)";
+            }
+        }
+
+        private int GetSelectedFocusDurationMinutes()
+        {
+            if (RbFocus50m?.IsChecked == true) return 50;
+            if (RbFocus90m?.IsChecked == true) return 90;
+            if (RbFocusManual?.IsChecked == true) return 0;
+            return 25; // default 25m Pomodoro
+        }
+
+        private async void RefreshFocusProcessesList()
+        {
+            if (LvFocusProcesses == null) return;
+            if (TxtStatusBar != null) TxtStatusBar.Text = "Scanning active background daemons for Deep Focus...";
+
+            var candidates = await Task.Run(() => _focusManager.GetDiscoverableBackgroundProcesses());
+            _focusCandidates = candidates;
+            LvFocusProcesses.ItemsSource = null;
+            LvFocusProcesses.ItemsSource = _focusCandidates;
+
+            long totalMem = _focusCandidates.Sum(c => c.MemoryBytes);
+            if (TxtMetricSuspendedCount != null) TxtMetricSuspendedCount.Text = $"{_focusCandidates.Count} detected";
+            if (TxtMetricQuarantinedRam != null) TxtMetricQuarantinedRam.Text = $"{totalMem / (1024.0 * 1024.0):F1} MB";
+            if (TxtStatusBar != null) TxtStatusBar.Text = $"Found {_focusCandidates.Count} non-essential background daemons ({totalMem / (1024.0 * 1024.0):F1} MB potential reclaim).";
+        }
+
+        private void OnRefreshFocusProcessesClick(object sender, RoutedEventArgs e)
+        {
+            RefreshFocusProcessesList();
+        }
+
+        private void OnSelectAllFocusProcessesClick(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in _focusCandidates) item.IsSelected = true;
+            LvFocusProcesses.ItemsSource = null;
+            LvFocusProcesses.ItemsSource = _focusCandidates;
+        }
+
+        private void OnClearFocusProcessesClick(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in _focusCandidates) item.IsSelected = false;
+            LvFocusProcesses.ItemsSource = null;
+            LvFocusProcesses.ItemsSource = _focusCandidates;
+        }
+
         private void OnToggleFocusModeClick(object sender, RoutedEventArgs e)
         {
             if (_focusManager.IsFocusModeActive)
             {
-                string msg = _focusManager.DisableFocusMode();
-                BtnToggleFocusMode.Content = "🚀 ACTIVATE DEEP FOCUS MODE";
+                var (resumed, msg) = _focusManager.DisableFocusMode();
+                StopFocusCountdown();
+
+                BtnToggleFocusMode.Content = "🚀 ACTIVATE DEEP FOCUS";
                 TxtFocusStatus.Text = "Focus Mode is currently OFF.";
+                TxtMetricPowerScheme.Text = "Balanced (Restored)";
                 TxtStatusBar.Text = msg;
+
+                VortexDialogWindow.ShowSuccess(this, "Deep Focus Session Ended", $"{resumed} Daemons Resumed", "Restored", msg);
+                RefreshFocusProcessesList();
             }
             else
             {
-                var (stopped, msg) = _focusManager.EnableFocusMode();
-                BtnToggleFocusMode.Content = "🛑 DEACTIVATE FOCUS MODE";
-                TxtFocusStatus.Text = $"Focus Mode ACTIVE: Paused {stopped} background tasks.";
+                var selectedPids = _focusCandidates.Where(c => c.IsSelected).Select(c => c.Pid).ToList();
+                int durationMins = GetSelectedFocusDurationMinutes();
+                bool enableDnd = ChkFocusDnd?.IsChecked == true;
+                bool lockPower = ChkFocusPowerPlan?.IsChecked == true;
+
+                var (suspended, quarantinedBytes, msg) = _focusManager.EnableFocusMode(selectedPids, durationMins, enableDnd, lockPower);
+
+                BtnToggleFocusMode.Content = "🛑 DEACTIVATE DEEP FOCUS";
+                TxtFocusStatus.Text = $"Deep Focus ACTIVE ({suspended} daemons suspended)";
+                TxtMetricSuspendedCount.Text = $"{suspended} suspended";
+                TxtMetricQuarantinedRam.Text = $"{quarantinedBytes / (1024.0 * 1024.0):F1} MB";
+                TxtMetricPowerScheme.Text = lockPower ? "High Performance" : "Normal";
                 TxtStatusBar.Text = msg;
+
+                if (durationMins > 0)
+                {
+                    StartFocusCountdown(durationMins);
+                }
+                else
+                {
+                    TxtFocusTimer.Text = "♾️";
+                    TxtFocusTimerSub.Text = "Running manual session";
+                }
+
+                _trayService?.ShowNotification("Deep Focus Mode Active", $"{suspended} background daemons suspended. DND active.");
+            }
+        }
+
+        private void StartFocusCountdown(int durationMinutes)
+        {
+            StopFocusCountdown();
+            _focusTimeRemaining = TimeSpan.FromMinutes(durationMinutes);
+            TxtFocusTimer.Text = _focusTimeRemaining.ToString(@"mm\:ss");
+            TxtFocusTimerSub.Text = "Session in progress...";
+
+            _focusCountdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _focusCountdownTimer.Tick += (s, e) =>
+            {
+                _focusTimeRemaining = _focusTimeRemaining.Subtract(TimeSpan.FromSeconds(1));
+                if (_focusTimeRemaining <= TimeSpan.Zero)
+                {
+                    StopFocusCountdown();
+                    TxtFocusTimer.Text = "00:00";
+                    TxtFocusTimerSub.Text = "Session Complete!";
+                    OnToggleFocusModeClick(BtnToggleFocusMode, new RoutedEventArgs());
+                    System.Media.SystemSounds.Exclamation.Play();
+                }
+                else
+                {
+                    TxtFocusTimer.Text = _focusTimeRemaining.ToString(@"mm\:ss");
+                }
+            };
+            _focusCountdownTimer.Start();
+        }
+
+        private void StopFocusCountdown()
+        {
+            if (_focusCountdownTimer != null)
+            {
+                _focusCountdownTimer.Stop();
+                _focusCountdownTimer = null;
             }
         }
         #endregion

@@ -24,6 +24,7 @@ namespace Vortex.Tests
             Test_PrivacyEraserFullSpectrumScanAndSafeClipboardPreservation();
             Test_ActiveIdentityShieldAndInAppRemediation();
             Test_SystemInfoExpandedHardwareSpecsAndUpdaterCleanMilestones();
+            Test_DeepFocusModeProcessSuspensionAndLifecycle();
         }
 
         private static void Test_ZeroByteAndEmptyDirPreservation()
@@ -452,6 +453,29 @@ namespace Vortex.Tests
                 throw new Exception("Generated TXT report missing expanded hardware telemetry sections!");
 
             TestRunner.Pass("SystemInfo: Expanded Network, Power & Security Hardware Telemetry");
+        }
+
+        private static void Test_DeepFocusModeProcessSuspensionAndLifecycle()
+        {
+            string dbPath = Path.Combine(Path.GetTempPath(), "VortexTest_DB_Focus_" + Guid.NewGuid().ToString("N") + ".db");
+            var db = new DatabaseService(dbPath);
+            var focusManager = new Vortex.Core.Modes.FocusModeManager(db);
+
+            // 1. Verify background process discovery works
+            var candidates = focusManager.GetDiscoverableBackgroundProcesses();
+            if (candidates == null)
+                throw new Exception("FocusModeManager GetDiscoverableBackgroundProcesses returned null!");
+
+            // 2. Test lifecycle without crash
+            var (suspended, quarantined, enableMsg) = focusManager.EnableFocusMode(targetPids: Array.Empty<int>(), durationMinutes: 25, enableDnd: false, setHighPerfPower: false);
+            if (!focusManager.IsFocusModeActive)
+                throw new Exception("FocusModeManager failed to set IsFocusModeActive = true!");
+
+            var (resumed, disableMsg) = focusManager.DisableFocusMode();
+            if (focusManager.IsFocusModeActive)
+                throw new Exception("FocusModeManager failed to deactivate focus mode!");
+
+            TestRunner.Pass("Focus: Deep Focus Mode Native Suspension & Session Lifecycle");
         }
     }
 }

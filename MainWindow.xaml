@@ -119,7 +119,7 @@
                         <RadioButton x:Name="NavFocus" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🎯" FontSize="14" Margin="0,0,10,0" />
-                                <TextBlock Text="Gaming / Focus Mode" />
+                                <TextBlock Text="Deep Focus Mode" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavHistory" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
@@ -1382,7 +1382,7 @@
                     </Border>
                 </Grid>
 
-                <!-- TAB 7: Gaming & Focus Mode (FULL PAGE VIEW) -->
+                <!-- TAB 7: Deep Focus Mode (FULL PAGE VIEW) -->
                 <Grid x:Name="PanelFocus" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -1391,8 +1391,8 @@
 
                     <DockPanel Grid.Row="0" Margin="0,0,0,16">
                         <StackPanel DockPanel.Dock="Left">
-                            <TextBlock Text="Gaming &amp; Focus Mode" Style="{StaticResource TitleHeaderStyle}" />
-                            <TextBlock Text="Suspend background daemons and update tasks during focus." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                            <TextBlock Text="Deep Focus Mode" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Zero-distraction workstation environment with process suspension, DND, and performance tuning." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
                         </StackPanel>
                     </DockPanel>
 
@@ -1402,66 +1402,115 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left Control Card -->
-                        <Border Grid.Column="0" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="24" Margin="0,0,16,0">
-                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,16" HorizontalAlignment="Center">
-                                    <TextBlock Text="🎯" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                                <TextBlock Text="Focus Mode Status" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
-                                <TextBlock x:Name="TxtFocusStatus" Text="Focus Mode is currently OFF." Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,20" />
-
-                                <Button x:Name="BtnToggleFocusMode" Style="{StaticResource VortexPrimaryButton}" Content="🚀 ACTIVATE FOCUS MODE" Click="OnToggleFocusModeClick" FontSize="13" Padding="20,10" HorizontalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Right Info & Monitored Daemons Card -->
-                        <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                        <!-- Left Control & Session Card -->
+                        <Border Grid.Column="0" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,16,0">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel>
-                                    <TextBlock Text="MANAGED BACKGROUND SERVICES" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" FontSize="11" Margin="0,0,0,12" />
-                                    
-                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
-                                        <Grid>
-                                            <StackPanel>
-                                                <TextBlock Text="Adobe Creative Cloud Helpers &amp; IPC" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                <TextBlock Text="Creative Cloud UI Helper, AdobeDesktopService, IPCBroker" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                            </StackPanel>
-                                            <TextBlock Text="~150 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        </Grid>
+                                <StackPanel HorizontalAlignment="Stretch">
+                                    <Border Width="64" Height="64" CornerRadius="32" Background="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,12" HorizontalAlignment="Center">
+                                        <TextBlock Text="🎯" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="Focus Session Station" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
+                                    <TextBlock x:Name="TxtFocusStatus" Text="Focus Mode is currently OFF." Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,14" />
+
+                                    <!-- Timer Duration Selector -->
+                                    <TextBlock Text="SESSION DURATION" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,6" />
+                                    <UniformGrid Columns="2" Margin="0,0,0,12">
+                                        <RadioButton x:Name="RbFocus25m" Style="{StaticResource VortexFilterChip}" GroupName="FocusDurationGroup" Content="⏱️ 25m Pomodoro" IsChecked="True" Checked="OnFocusDurationChanged" Margin="0,0,4,4" />
+                                        <RadioButton x:Name="RbFocus50m" Style="{StaticResource VortexFilterChip}" GroupName="FocusDurationGroup" Content="⏱️ 50m Deep Work" Checked="OnFocusDurationChanged" Margin="4,0,0,4" />
+                                        <RadioButton x:Name="RbFocus90m" Style="{StaticResource VortexFilterChip}" GroupName="FocusDurationGroup" Content="⏱️ 90m Flow State" Checked="OnFocusDurationChanged" Margin="0,4,4,0" />
+                                        <RadioButton x:Name="RbFocusManual" Style="{StaticResource VortexFilterChip}" GroupName="FocusDurationGroup" Content="♾️ Manual (No Limit)" Checked="OnFocusDurationChanged" Margin="4,4,0,0" />
+                                    </UniformGrid>
+
+                                    <!-- Live Countdown Box -->
+                                    <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,14">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="REMAINING TIME" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                                            <TextBlock x:Name="TxtFocusTimer" Text="25:00" FontFamily="Consolas" FontSize="32" FontWeight="Bold" Foreground="{DynamicResource AccentGlowBrush}" HorizontalAlignment="Center" Margin="0,4,0,2" />
+                                            <TextBlock x:Name="TxtFocusTimerSub" Text="Ready to begin session" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                                        </StackPanel>
                                     </Border>
 
-                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
-                                        <Grid>
-                                            <StackPanel>
-                                                <TextBlock Text="OEM Diagnostics &amp; Background Helpers" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                <TextBlock Text="HP Support Framework, HP OmniHub, OEM Update Checkers" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                            </StackPanel>
-                                            <TextBlock Text="~80 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        </Grid>
-                                    </Border>
+                                    <!-- Focus Features Checkboxes -->
+                                    <StackPanel Margin="0,0,0,14">
+                                        <CheckBox x:Name="ChkFocusDnd" Content="Enforce Windows Do Not Disturb" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,0,0,6" ToolTip="Suppresses Windows toast notifications and sound alerts during the session" />
+                                        <CheckBox x:Name="ChkFocusPowerPlan" Content="Lock High Performance Power Scheme" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,0,0,6" ToolTip="Prevents CPU core throttling or sleep during deep focus" />
+                                    </StackPanel>
 
-                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
-                                        <Grid>
-                                            <StackPanel>
-                                                <TextBlock Text="Browser Background Workers &amp; Crash Reporters" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                <TextBlock Text="GoogleCrashHandler, MicrosoftEdgeUpdate, Telemetry hosts" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                            </StackPanel>
-                                            <TextBlock Text="~60 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        </Grid>
-                                    </Border>
+                                    <!-- Primary Toggle Button -->
+                                    <Button x:Name="BtnToggleFocusMode" Style="{StaticResource VortexPrimaryButton}" Content="🚀 ACTIVATE DEEP FOCUS" Click="OnToggleFocusModeClick" FontSize="13" Padding="16,10" HorizontalAlignment="Stretch" Margin="0,0,0,12" />
 
-                                    <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
-                                        <Grid>
-                                            <StackPanel>
-                                                <TextBlock Text="Windows Error Reporting &amp; Telemetries" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                <TextBlock Text="WerFault, DiagTrack, Connected User Experiences" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                            </StackPanel>
-                                            <TextBlock Text="~50 MB RAM" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                        </Grid>
+                                    <!-- Real Live Session Metrics -->
+                                    <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="Suspended Daemons:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                                <TextBlock x:Name="TxtMetricSuspendedCount" Text="0 processes" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="Quarantined Memory:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                                <TextBlock x:Name="TxtMetricQuarantinedRam" Text="0 MB" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Grid>
+                                                <TextBlock Text="Power Scheme:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                                <TextBlock x:Name="TxtMetricPowerScheme" Text="Balanced" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" HorizontalAlignment="Right" />
+                                            </Grid>
+                                        </StackPanel>
                                     </Border>
                                 </StackPanel>
                             </ScrollViewer>
+                        </Border>
+
+                        <!-- Right Dynamic Daemons & Suspension Candidate Card -->
+                        <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="16">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Header -->
+                                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                                    <StackPanel DockPanel.Dock="Left">
+                                        <TextBlock Text="ACTIVE BACKGROUND PROCESSES" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" FontSize="11" />
+                                        <TextBlock Text="Selected apps will be frozen in memory (0% CPU/Net) during focus and resumed on exit." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource VortexSecondaryButton}" Content="🔄 Refresh Daemons" Click="OnRefreshFocusProcessesClick" Height="28" Padding="10,0" HorizontalAlignment="Right" />
+                                </DockPanel>
+
+                                <!-- Real ListView of candidate processes -->
+                                <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                                    <ListView x:Name="LvFocusProcesses">
+                                        <ListView.View>
+                                            <GridView>
+                                                <GridViewColumn Width="40">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                                <GridViewColumn Header="Process Name" Width="170">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                                <GridViewColumn Header="Category" Width="150" DisplayMemberBinding="{Binding Category}" />
+                                                <GridViewColumn Header="Quarantined RAM" Width="120" DisplayMemberBinding="{Binding MemoryDisplay}" />
+                                                <GridViewColumn Header="PID" Width="70" DisplayMemberBinding="{Binding Pid}" />
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
+                                </Border>
+
+                                <!-- Selection Helper Footer -->
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="☑️ Select All" Click="OnSelectAllFocusProcessesClick" Height="28" Padding="10,0" Margin="0,0,6,0" FontSize="11" />
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="Clear Selection" Click="OnClearFocusProcessesClick" Height="28" Padding="10,0" FontSize="11" />
+                                </StackPanel>
+                            </Grid>
                         </Border>
                     </Grid>
                 </Grid>

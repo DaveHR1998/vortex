@@ -117,12 +117,12 @@ namespace Vortex.Views
         {
             if (_focusMgr.IsFocusModeActive)
             {
-                string msg = _focusMgr.DisableFocusMode();
+                var (_, msg) = _focusMgr.DisableFocusMode();
                 TxtToast.Text = "Focus OFF";
             }
             else
             {
-                var (_, msg) = _focusMgr.EnableFocusMode();
+                var (_, _, msg) = _focusMgr.EnableFocusMode();
                 TxtToast.Text = "Focus ON";
             }
             ShowToast();
