@@ -1261,18 +1261,18 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <!-- Top Title & Global Search/Rescan -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
                         <StackPanel DockPanel.Dock="Left">
                             <TextBlock Text="Windows Services &amp; Bloat Controller" Style="{StaticResource TitleHeaderStyle}" />
-                            <TextBlock Text="Live enumeration of all Windows and third-party services with persistent startup mode control." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                            <TextBlock Text="Live enumeration and startup control for system &amp; background services." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
                         </StackPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button x:Name="BtnDebloatServices" Style="{StaticResource VortexPrimaryButton}" Content="⚡ 1-Click Debloat Services" Click="OnDebloatServicesClick" Height="32" Margin="0,0,8,0" ToolTip="Disable and stop safe non-essential background bloat services (DiagTrack, WerSvc, Fax, Maps, Xbox)" />
-                            <Grid Width="220" Margin="0,0,8,0">
+                            <Grid Width="200" Margin="0,0,8,0">
                                 <TextBox x:Name="TxtServiceFilter" Style="{StaticResource FluentSearchBox}"
                                          Padding="10,6,28,6" Height="32"
                                          TextChanged="OnServiceFilterChanged"
-                                         ToolTip="Filter services by name, display title, or status" />
+                                         ToolTip="Filter services by name, display title, status, or category" />
                                 <TextBlock x:Name="TxtServiceFilterPlaceholder" Text="Filter all services..."
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            VerticalAlignment="Center" Margin="10,0,0,0"
@@ -1281,17 +1281,28 @@
                                            HorizontalAlignment="Right" VerticalAlignment="Center"
                                            Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
                             </Grid>
-                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Rescan" Click="OnRefreshServicesClick" Height="32" />
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Rescan" Click="OnRefreshServicesClick" Height="32" Padding="12,0" />
                         </StackPanel>
                     </DockPanel>
 
-                    <!-- Service Filter Pills -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-                        <RadioButton x:Name="RbSvcAll" Content="All Services (0)" IsChecked="True" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="130" Margin="0,0,6,0" />
-                        <RadioButton x:Name="RbSvcRunning" Content="🟢 Running (0)" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="120" Margin="0,0,6,0" />
-                        <RadioButton x:Name="RbSvcBloat" Content="⚡ Bloat / Safe to Disable (0)" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="190" Margin="0,0,6,0" />
-                        <RadioButton x:Name="RbSvcThirdParty" Content="📦 Third-Party (0)" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="140" />
-                    </StackPanel>
+                    <!-- Service Category Filter Bar & Quick Debloat Action -->
+                    <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,10">
+                        <DockPanel>
+                            <!-- Filter Chips Group -->
+                            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="FILTER:" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <RadioButton x:Name="RbSvcAll" Style="{StaticResource VortexFilterChip}" GroupName="ServiceCategoryFilterGroup" Content="All Services (0)" IsChecked="True" Checked="OnServiceCategoryFilterChanged" Click="OnServiceCategoryFilterChanged" />
+                                <RadioButton x:Name="RbSvcRunning" Style="{StaticResource VortexFilterChip}" GroupName="ServiceCategoryFilterGroup" Content="🟢 Running (0)" Checked="OnServiceCategoryFilterChanged" Click="OnServiceCategoryFilterChanged" />
+                                <RadioButton x:Name="RbSvcBloat" Style="{StaticResource VortexFilterChip}" GroupName="ServiceCategoryFilterGroup" Content="⚡ Bloat / Safe (0)" Checked="OnServiceCategoryFilterChanged" Click="OnServiceCategoryFilterChanged" />
+                                <RadioButton x:Name="RbSvcThirdParty" Style="{StaticResource VortexFilterChip}" GroupName="ServiceCategoryFilterGroup" Content="📦 Third-Party (0)" Checked="OnServiceCategoryFilterChanged" Click="OnServiceCategoryFilterChanged" />
+                            </StackPanel>
+
+                            <!-- Primary Action -->
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button x:Name="BtnDebloatServices" Style="{StaticResource VortexPrimaryButton}" Content="⚡ 1-Click Debloat Services" Click="OnDebloatServicesClick" Height="30" Padding="14,0" ToolTip="Disable and stop safe non-essential background bloat services (DiagTrack, WerSvc, Fax, Maps, Xbox)" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
 
                     <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
                         <ListView x:Name="LvServices">

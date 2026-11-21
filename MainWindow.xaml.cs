@@ -2044,7 +2044,7 @@ namespace Vortex
             if (_allServices == null) return;
             if (RbSvcAll != null) RbSvcAll.Content = $"All Services ({_allServices.Count})";
             if (RbSvcRunning != null) RbSvcRunning.Content = $"🟢 Running ({_allServices.Count(s => s.IsRunning)})";
-            if (RbSvcBloat != null) RbSvcBloat.Content = $"⚡ Bloat / Safe to Disable ({_allServices.Count(s => s.IsBloat)})";
+            if (RbSvcBloat != null) RbSvcBloat.Content = $"⚡ Bloat / Safe ({_allServices.Count(s => s.IsBloat)})";
             if (RbSvcThirdParty != null) RbSvcThirdParty.Content = $"📦 Third-Party ({_allServices.Count(s => s.IsThirdParty)})";
         }
 
