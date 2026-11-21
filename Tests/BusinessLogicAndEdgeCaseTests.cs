@@ -23,6 +23,7 @@ namespace Vortex.Tests
             Test_PermanentTelemetryLockdownEngine();
             Test_PrivacyEraserFullSpectrumScanAndSafeClipboardPreservation();
             Test_ActiveIdentityShieldAndInAppRemediation();
+            Test_SystemInfoExpandedHardwareSpecsAndUpdaterCleanMilestones();
         }
 
         private static void Test_ZeroByteAndEmptyDirPreservation()
@@ -422,6 +423,35 @@ namespace Vortex.Tests
                 throw new Exception("File was not deleted after ShredFile remediation!");
 
             TestRunner.Pass("Identity: Active Identity Shield & In-App Remediation Dispatcher");
+        }
+
+        private static void Test_SystemInfoExpandedHardwareSpecsAndUpdaterCleanMilestones()
+        {
+            using var hm = new Vortex.Core.SystemIntegration.HardwareMonitor();
+            var netSpecs = hm.GetNetworkAndInternetSpecs();
+            var powerSpecs = hm.GetBatteryAndPowerSpecs();
+            var secSpecs = hm.GetSecurityAndFirmwareSpecs();
+
+            if (netSpecs == null || netSpecs.Count == 0)
+                throw new Exception("HardwareMonitor GetNetworkAndInternetSpecs returned empty list!");
+
+            if (powerSpecs == null || powerSpecs.Count == 0)
+                throw new Exception("HardwareMonitor GetBatteryAndPowerSpecs returned empty list!");
+
+            if (secSpecs == null || secSpecs.Count == 0)
+                throw new Exception("HardwareMonitor GetSecurityAndFirmwareSpecs returned empty list!");
+
+            // Verify report generation includes new sections
+            var reading = hm.GetLiveReading();
+            var report = hm.GenerateTxtReport(
+                hm.GetCpuSpecs(), hm.GetGpuSpecs(), hm.GetMemorySpecs(), hm.GetStorageSpecs(),
+                hm.GetMotherboardSpecs(), hm.GetOsAndSoftwareSpecs(), reading,
+                netSpecs, powerSpecs, secSpecs);
+
+            if (!report.Contains("NETWORK & INTERNET") || !report.Contains("BATTERY & POWER") || !report.Contains("SECURITY, TPM & VIRTUALIZATION"))
+                throw new Exception("Generated TXT report missing expanded hardware telemetry sections!");
+
+            TestRunner.Pass("SystemInfo: Expanded Network, Power & Security Hardware Telemetry");
         }
     }
 }

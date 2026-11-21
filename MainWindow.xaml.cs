@@ -62,7 +62,7 @@ namespace Vortex
         private bool _isNetAutoRefreshRunning = false;
 
         // Cached spec data for System Info tab
-        private List<HardwareSpecItem>? _specsCpu, _specsGpu, _specsMem, _specsStorage, _specsMb, _specsOs;
+        private List<HardwareSpecItem>? _specsCpu, _specsGpu, _specsMem, _specsStorage, _specsMb, _specsOs, _specsNet, _specsPower, _specsSec;
 
         private List<ProcessInfoModel> _allProcesses = new();
         private List<FolderAttributionModel> _allFolders = new();
@@ -2397,6 +2397,13 @@ namespace Vortex
                 double mb = bytesFreed / (1024.0 * 1024.0);
                 string freedText = mb >= 1.0 ? $"{mb:F1} MB" : $"{bytesFreed / 1024.0:F0} KB";
 
+                // Wipe and collapse terminal output & progress bars to clean state
+                TxtUpdaterOutput.Text = string.Empty;
+                BorderUpdaterTerminal.Visibility = Visibility.Collapsed;
+                BorderUpdaterProgress.Visibility = Visibility.Collapsed;
+                PbOverallProgress.Value = 0;
+                PbPackageProgress.Value = 0;
+
                 if (filesDeleted > 0 || bytesFreed > 0)
                 {
                     TxtUpdaterStatus.Text = $"🧹 Download cache cleaned: Freed {freedText} across {filesDeleted} temporary files.";
@@ -2579,6 +2586,9 @@ namespace Vortex
                 _specsStorage = _hardwareMonitor.GetStorageSpecs();
                 _specsMb      = _hardwareMonitor.GetMotherboardSpecs();
                 _specsOs      = _hardwareMonitor.GetOsAndSoftwareSpecs();
+                _specsNet     = _hardwareMonitor.GetNetworkAndInternetSpecs();
+                _specsPower   = _hardwareMonitor.GetBatteryAndPowerSpecs();
+                _specsSec     = _hardwareMonitor.GetSecurityAndFirmwareSpecs();
             });
 
             // Default to CPU tab
@@ -2590,12 +2600,15 @@ namespace Vortex
         {
             if (LvSysInfo == null) return;
 
-            if (SysTabCpu.IsChecked == true)       LvSysInfo.ItemsSource = _specsCpu;
-            else if (SysTabGpu.IsChecked == true)  LvSysInfo.ItemsSource = _specsGpu;
-            else if (SysTabRam.IsChecked == true)  LvSysInfo.ItemsSource = _specsMem;
-            else if (SysTabDisk.IsChecked == true) LvSysInfo.ItemsSource = _specsStorage;
-            else if (SysTabMb.IsChecked == true)   LvSysInfo.ItemsSource = _specsMb;
-            else if (SysTabOs.IsChecked == true)   LvSysInfo.ItemsSource = _specsOs;
+            if (SysTabCpu?.IsChecked == true)        LvSysInfo.ItemsSource = _specsCpu;
+            else if (SysTabGpu?.IsChecked == true)   LvSysInfo.ItemsSource = _specsGpu;
+            else if (SysTabRam?.IsChecked == true)   LvSysInfo.ItemsSource = _specsMem;
+            else if (SysTabDisk?.IsChecked == true)  LvSysInfo.ItemsSource = _specsStorage;
+            else if (SysTabMb?.IsChecked == true)    LvSysInfo.ItemsSource = _specsMb;
+            else if (SysTabOs?.IsChecked == true)    LvSysInfo.ItemsSource = _specsOs;
+            else if (SysTabNet?.IsChecked == true)   LvSysInfo.ItemsSource = _specsNet;
+            else if (SysTabPower?.IsChecked == true) LvSysInfo.ItemsSource = _specsPower;
+            else if (SysTabSec?.IsChecked == true)   LvSysInfo.ItemsSource = _specsSec;
         }
 
         private void StartSensorTimer()
@@ -2650,6 +2663,9 @@ namespace Vortex
         private void OnRefreshSysInfoClick(object sender, RoutedEventArgs e)
         {
             _specsCpu = null; // force reload
+            _specsNet = null;
+            _specsPower = null;
+            _specsSec = null;
             _ = LoadSystemInfoAsync();
         }
 
@@ -2659,7 +2675,8 @@ namespace Vortex
 
             var reading = _hardwareMonitor.GetLiveReading();
             var report = _hardwareMonitor.GenerateTxtReport(
-                _specsCpu!, _specsGpu!, _specsMem!, _specsStorage!, _specsMb!, _specsOs!, reading);
+                _specsCpu!, _specsGpu!, _specsMem!, _specsStorage!, _specsMb!, _specsOs!, reading,
+                _specsNet, _specsPower, _specsSec);
 
             var dlg = new Microsoft.Win32.SaveFileDialog
             {

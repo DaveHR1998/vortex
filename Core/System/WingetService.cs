@@ -546,13 +546,6 @@ namespace Vortex.Core.SystemManagement
                             StatusText = "Downloading package..."
                         });
 
-                        // Report to terminal every 2.5 seconds when bytes change so user sees life in the console
-                        if ((DateTime.UtcNow - lastLogTime).TotalSeconds >= 2.5 && currentBytes != lastBytes)
-                        {
-                            lastLogTime = DateTime.UtcNow;
-                            outputProgress.Report($"  ⤓ {detailText}");
-                        }
-
                         lastBytes = currentBytes;
                     }
                 }
@@ -720,8 +713,12 @@ namespace Vortex.Core.SystemManagement
             string clean = AnsiRegex.Replace(line, "").Trim();
             if (string.IsNullOrWhiteSpace(clean)) return;
 
-            // Stream to console / terminal
-            textProgress.Report(clean);
+            // Stream to console / terminal (filter out repetitive download byte ticks so terminal only shows real milestones)
+            bool isDownloadTick = SizeRegex.IsMatch(clean) || clean.StartsWith("⤓") || clean.StartsWith("↓") || (clean.Contains("MB /") && clean.Contains("%"));
+            if (!isDownloadTick)
+            {
+                textProgress.Report(clean);
+            }
 
             // Proactively detect package download URL and probe total package size in background
             var urlMatch = UrlRegex.Match(clean);

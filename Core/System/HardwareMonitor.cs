@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Management;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using System.Text;
 using LibreHardwareMonitor.Hardware;
+using Microsoft.Win32;
 using Vortex.Core.SystemInfo;
 
 namespace Vortex.Core.SystemIntegration
@@ -309,6 +313,293 @@ namespace Vortex.Core.SystemIntegration
             return list;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SYSTEM_POWER_STATUS
+        {
+            public byte ACLineStatus;
+            public byte BatteryFlag;
+            public byte BatteryLifePercent;
+            public byte SystemStatusFlag;
+            public int BatteryLifeTime;
+            public int BatteryFullLifeTime;
+        }
+
+        [DllImport("kernel32.dll")]
+        public static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS lpSystemPowerStatus);
+
+        public List<HardwareSpecItem> GetNetworkAndInternetSpecs()
+        {
+            var list = new List<HardwareSpecItem>();
+            try
+            {
+                var activeInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                    .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
+                                  nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                    .ToList();
+
+                if (activeInterfaces.Count > 0)
+                {
+                    foreach (var nic in activeInterfaces)
+                    {
+                        var props = nic.GetIPProperties();
+                        Add(list, "Active Interface", $"{nic.Name} ({nic.Description})");
+                        Add(list, "Interface Type", nic.NetworkInterfaceType.ToString());
+
+                        if (nic.Speed > 0)
+                        {
+                            double mbps = nic.Speed / 1_000_000.0;
+                            Add(list, "Link Speed", mbps >= 1000 ? $"{mbps / 1000.0:F1} Gbps" : $"{mbps:F0} Mbps");
+                        }
+
+                        var macBytes = nic.GetPhysicalAddress().GetAddressBytes();
+                        if (macBytes.Length > 0)
+                        {
+                            Add(list, "MAC Address", string.Join(":", macBytes.Select(b => b.ToString("X2"))));
+                        }
+
+                        foreach (var ip in props.UnicastAddresses)
+                        {
+                            if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                            {
+                                Add(list, "IPv4 Address", ip.Address.ToString());
+                                if (ip.IPv4Mask != null) Add(list, "Subnet Mask", ip.IPv4Mask.ToString());
+                            }
+                            else if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 && !ip.Address.IsIPv6LinkLocal)
+                            {
+                                Add(list, "IPv6 Address", ip.Address.ToString());
+                            }
+                        }
+
+                        var gateways = props.GatewayAddresses.Select(g => g.Address.ToString()).ToList();
+                        if (gateways.Count > 0) Add(list, "Default Gateway", string.Join(", ", gateways));
+
+                        var dns = props.DnsAddresses.Select(d => d.ToString()).ToList();
+                        if (dns.Count > 0) Add(list, "DNS Servers", string.Join(", ", dns));
+
+                        list.Add(new HardwareSpecItem { Property = "──────────────────────", Value = string.Empty });
+                    }
+                }
+                else
+                {
+                    Add(list, "Network Status", "No active physical network interfaces detected.");
+                }
+
+                // Enumerate Web Browsers
+                list.Add(new HardwareSpecItem { Property = "── Web Browsers Detected ──", Value = string.Empty });
+                var browsers = EnumerateBrowsers();
+                foreach (var b in browsers)
+                {
+                    Add(list, b.Name, $"{b.Version} ({b.Path})");
+                }
+            }
+            catch { }
+            return list;
+        }
+
+        private static List<(string Name, string Version, string Path)> EnumerateBrowsers()
+        {
+            var list = new List<(string, string, string)>();
+            var progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var progFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+            var candidates = new (string Name, string Path)[]
+            {
+                ("Google Chrome", Path.Combine(progFiles, @"Google\Chrome\Application\chrome.exe")),
+                ("Google Chrome (x86)", Path.Combine(progFilesX86, @"Google\Chrome\Application\chrome.exe")),
+                ("Microsoft Edge", Path.Combine(progFilesX86, @"Microsoft\Edge\Application\msedge.exe")),
+                ("Microsoft Edge", Path.Combine(progFiles, @"Microsoft\Edge\Application\msedge.exe")),
+                ("Mozilla Firefox", Path.Combine(progFiles, @"Mozilla Firefox\firefox.exe")),
+                ("Brave Browser", Path.Combine(progFiles, @"BraveSoftware\Brave-Browser\Application\brave.exe")),
+                ("Opera", Path.Combine(localApp, @"Programs\Opera\launcher.exe"))
+            };
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (name, path) in candidates)
+            {
+                if (File.Exists(path) && !seen.Contains(name))
+                {
+                    seen.Add(name);
+                    string ver = "Installed";
+                    try
+                    {
+                        var vi = FileVersionInfo.GetVersionInfo(path);
+                        if (!string.IsNullOrEmpty(vi.FileVersion)) ver = vi.FileVersion;
+                    }
+                    catch { }
+                    list.Add((name, ver, path));
+                }
+            }
+            return list;
+        }
+
+        public List<HardwareSpecItem> GetBatteryAndPowerSpecs()
+        {
+            var list = new List<HardwareSpecItem>();
+            try
+            {
+                if (GetSystemPowerStatus(out var status))
+                {
+                    string ac = status.ACLineStatus switch
+                    {
+                        0 => "🔋 Battery (Offline / Discharging)",
+                        1 => "🔌 AC Power (Plugged In / Charging)",
+                        _ => "Unknown"
+                    };
+                    Add(list, "AC Power Source", ac);
+
+                    if (status.BatteryLifePercent != 255)
+                    {
+                        Add(list, "Battery Charge", $"{status.BatteryLifePercent}%");
+                    }
+
+                    if (status.BatteryLifeTime != -1 && status.BatteryLifeTime > 0)
+                    {
+                        TimeSpan rem = TimeSpan.FromSeconds(status.BatteryLifeTime);
+                        Add(list, "Estimated Runtime", $"{rem.Hours}h {rem.Minutes}m remaining");
+                    }
+                }
+
+                using var s = new ManagementObjectSearcher("SELECT * FROM Win32_Battery");
+                foreach (ManagementObject o in s.Get())
+                {
+                    Add(list, "Battery Device Name", o["Name"]);
+                    Add(list, "Device ID", o["DeviceID"]);
+                    Add(list, "Estimated Charge", $"{o["EstimatedChargeRemaining"]}%");
+
+                    if (o["DesignCapacity"] != null && o["FullChargeCapacity"] != null)
+                    {
+                        double design = Convert.ToDouble(o["DesignCapacity"]);
+                        double full = Convert.ToDouble(o["FullChargeCapacity"]);
+                        Add(list, "Design Capacity", $"{design:F0} mWh");
+                        Add(list, "Full Charge Capacity", $"{full:F0} mWh");
+                        if (design > 0)
+                        {
+                            double health = (full / design) * 100.0;
+                            Add(list, "Battery Health", $"{health:F1}% ({(100.0 - health):F1}% Wear Level)");
+                        }
+                    }
+                    break;
+                }
+
+                list.Add(new HardwareSpecItem { Property = "── Windows Power Plan ──", Value = string.Empty });
+                var planOutput = RunCmd("powercfg", "/getactivescheme");
+                if (!string.IsNullOrWhiteSpace(planOutput))
+                {
+                    int idx = planOutput.IndexOf('(');
+                    int endIdx = planOutput.LastIndexOf(')');
+                    if (idx > 0 && endIdx > idx)
+                    {
+                        string planName = planOutput.Substring(idx + 1, endIdx - idx - 1);
+                        Add(list, "Active Power Scheme", planName);
+                    }
+                    else
+                    {
+                        Add(list, "Active Power Scheme", planOutput.Trim());
+                    }
+                }
+            }
+            catch { }
+            return list;
+        }
+
+        public List<HardwareSpecItem> GetSecurityAndFirmwareSpecs()
+        {
+            var list = new List<HardwareSpecItem>();
+            try
+            {
+                TimeSpan uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+                Add(list, "System Uptime", $"{uptime.Days} days, {uptime.Hours} hours, {uptime.Minutes} minutes");
+
+                try
+                {
+                    using var secKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\SecureBoot\State");
+                    if (secKey != null)
+                    {
+                        var val = secKey.GetValue("UEFISecureBootEnabled");
+                        bool enabled = val != null && Convert.ToInt32(val) == 1;
+                        Add(list, "UEFI Secure Boot", enabled ? "🟢 Enabled (Active)" : "🔴 Disabled");
+                    }
+                    else
+                    {
+                        Add(list, "UEFI Secure Boot", "Not supported / Legacy BIOS");
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    using var tpmSearcher = new ManagementObjectSearcher(@"root\CIMV2\Security\MicrosoftTpm", "SELECT * FROM Win32_Tpm");
+                    bool foundTpm = false;
+                    foreach (ManagementObject t in tpmSearcher.Get())
+                    {
+                        foundTpm = true;
+                        bool isActivated = Convert.ToBoolean(t["IsActivated_InitialValue"] ?? false);
+                        bool isEnabled = Convert.ToBoolean(t["IsEnabled_InitialValue"] ?? false);
+                        string spec = t["SpecVersion"]?.ToString() ?? "Unknown";
+                        string mfg = t["ManufacturerIdTxt"]?.ToString() ?? "Unknown";
+                        Add(list, "TPM Security Module", $"🟢 Present — Spec: {spec} (Vendor: {mfg})");
+                        Add(list, "TPM Status", isActivated && isEnabled ? "🟢 Activated & Enabled" : "⚠️ Present but Inactive");
+                        break;
+                    }
+                    if (!foundTpm)
+                    {
+                        Add(list, "TPM Security Module", "Not detected or disabled in BIOS");
+                    }
+                }
+                catch
+                {
+                    Add(list, "TPM Security Module", "Unable to query TPM provider");
+                }
+
+                try
+                {
+                    using var procSearcher = new ManagementObjectSearcher("SELECT VirtualizationFirmwareEnabled FROM Win32_Processor");
+                    foreach (ManagementObject p in procSearcher.Get())
+                    {
+                        var virt = p["VirtualizationFirmwareEnabled"];
+                        if (virt != null)
+                        {
+                            bool virtEnabled = Convert.ToBoolean(virt);
+                            Add(list, "Hardware Virtualization", virtEnabled ? "🟢 Enabled in Firmware (VT-x / AMD-V)" : "🔴 Disabled in Firmware");
+                        }
+                        break;
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    using var lsaKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Lsa");
+                    var val = lsaKey?.GetValue("RunAsPPL");
+                    bool isProtected = val != null && Convert.ToInt32(val) >= 1;
+                    Add(list, "LSA Protection (Anti-Mimikatz)", isProtected ? "🟢 Active (RunAsPPL=1)" : "⚠️ Disabled");
+                }
+                catch { }
+            }
+            catch { }
+            return list;
+        }
+
+        private static string RunCmd(string exe, string args)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo(exe, args)
+                {
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                using var p = Process.Start(psi);
+                if (p == null) return string.Empty;
+                string output = p.StandardOutput.ReadToEnd();
+                p.WaitForExit(4000);
+                return output;
+            }
+            catch { return string.Empty; }
+        }
+
         // ─── Export ───────────────────────────────────────────────────────────
 
         public string GenerateTxtReport(
@@ -318,7 +609,10 @@ namespace Vortex.Core.SystemIntegration
             List<HardwareSpecItem> storage,
             List<HardwareSpecItem> mb,
             List<HardwareSpecItem> os,
-            LiveSensorReading      live)
+            LiveSensorReading      live,
+            List<HardwareSpecItem>? net = null,
+            List<HardwareSpecItem>? power = null,
+            List<HardwareSpecItem>? sec = null)
         {
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("==========================================================");
@@ -342,6 +636,9 @@ namespace Vortex.Core.SystemIntegration
             AppendSection(sb, "STORAGE",              storage);
             AppendSection(sb, "MOTHERBOARD & BIOS",   mb);
             AppendSection(sb, "OPERATING SYSTEM & SOFTWARE", os);
+            if (net != null) AppendSection(sb, "NETWORK & INTERNET", net);
+            if (power != null) AppendSection(sb, "BATTERY & POWER", power);
+            if (sec != null) AppendSection(sb, "SECURITY, TPM & VIRTUALIZATION", sec);
             return sb.ToString();
         }
 

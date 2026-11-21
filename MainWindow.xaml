@@ -2170,12 +2170,15 @@
 
                     <!-- Tab Strip for spec categories -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
-                        <RadioButton x:Name="SysTabCpu"  GroupName="SysInfoTab" Content="CPU"         Style="{StaticResource FluentNavItem}" IsChecked="True" Checked="OnSysInfoTabChanged" Padding="12,6" />
-                        <RadioButton x:Name="SysTabGpu"  GroupName="SysInfoTab" Content="GPU"         Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
-                        <RadioButton x:Name="SysTabRam"  GroupName="SysInfoTab" Content="Memory"      Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
-                        <RadioButton x:Name="SysTabDisk" GroupName="SysInfoTab" Content="Storage"     Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
-                        <RadioButton x:Name="SysTabMb"   GroupName="SysInfoTab" Content="Motherboard" Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
-                        <RadioButton x:Name="SysTabOs"   GroupName="SysInfoTab" Content="OS &amp; Software" Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="12,6" />
+                        <RadioButton x:Name="SysTabCpu"   GroupName="SysInfoTab" Content="CPU"               Style="{StaticResource FluentNavItem}" IsChecked="True" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabGpu"   GroupName="SysInfoTab" Content="GPU"               Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabRam"   GroupName="SysInfoTab" Content="Memory"            Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabDisk"  GroupName="SysInfoTab" Content="Storage"           Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabMb"    GroupName="SysInfoTab" Content="Motherboard"       Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabOs"    GroupName="SysInfoTab" Content="OS &amp; Software" Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabNet"   GroupName="SysInfoTab" Content="🌐 Network &amp; Web" Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabPower" GroupName="SysInfoTab" Content="🔋 Power"          Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
+                        <RadioButton x:Name="SysTabSec"   GroupName="SysInfoTab" Content="🛡️ Security &amp; Boot" Style="{StaticResource FluentNavItem}" Checked="OnSysInfoTabChanged" Padding="10,6" />
                     </StackPanel>
 
                     <!-- Spec Table -->
