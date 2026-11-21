@@ -9,6 +9,17 @@ using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
+[assembly: AssemblyTitle("Vortex System Guardian Setup")]
+[assembly: AssemblyDescription("Vortex System Guardian & Encrypted Vault Installer")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("DAVE_HR")]
+[assembly: AssemblyProduct("Vortex System Guardian")]
+[assembly: AssemblyCopyright("Copyright © DAVE_HR 2026")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
+
 namespace Vortex.Setup
 {
     public class SetupForm : Form

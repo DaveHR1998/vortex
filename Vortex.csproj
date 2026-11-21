@@ -10,6 +10,14 @@
     <ApplicationIcon>vortex.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <NuGetAudit>false</NuGetAudit>
+    <Company>DAVE_HR</Company>
+    <Authors>DAVE_HR</Authors>
+    <Product>Vortex System Guardian</Product>
+    <Description>Vortex System Guardian, Cyberpunk Optimizer and Encrypted Vault</Description>
+    <Copyright>Copyright © DAVE_HR 2026</Copyright>
+    <Version>2.0.0.0</Version>
+    <FileVersion>2.0.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

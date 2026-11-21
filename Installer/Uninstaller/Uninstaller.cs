@@ -3,9 +3,21 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
+
+[assembly: AssemblyTitle("Vortex System Guardian Uninstaller")]
+[assembly: AssemblyDescription("Vortex System Guardian & Encrypted Vault Uninstaller")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("DAVE_HR")]
+[assembly: AssemblyProduct("Vortex System Guardian")]
+[assembly: AssemblyCopyright("Copyright © DAVE_HR 2026")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 
 namespace Vortex.Uninstaller
 {

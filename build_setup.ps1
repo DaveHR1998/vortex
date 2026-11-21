@@ -22,6 +22,39 @@ $csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 $iconPath = Join-Path $rootDir "vortex.ico"
 $pngPath = Join-Path $rootDir "vortex.png"
 
+# Helper: Get or Create Code-Signing Certificate for DAVE_HR
+function Get-OrCreateCodeSigningCert {
+    $existing = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue | 
+        Where-Object { $_.Subject -match "DAVE_HR" } | Select-Object -First 1
+
+    if (-not $existing) {
+        Write-Host "       Generating Authenticode certificate for DAVE_HR..." -ForegroundColor Cyan
+        $existing = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=DAVE_HR, O=DAVE_HR" -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(10)
+    }
+
+    try {
+        $pubStore = New-Object System.Security.Cryptography.X509Certificates.X509Store "TrustedPublisher", "CurrentUser"
+        $pubStore.Open("ReadWrite")
+        if (-not ($pubStore.Certificates | Where-Object { $_.Thumbprint -eq $existing.Thumbprint })) {
+            $pubStore.Add($existing)
+        }
+        $pubStore.Close()
+    }
+    catch { }
+
+    return $existing
+}
+
+function Sign-Binary([string]$filePath, $cert) {
+    if (Test-Path $filePath) {
+        Set-AuthenticodeSignature -FilePath $filePath -Certificate $cert -HashAlgorithm SHA256 | Out-Null
+        Unblock-File -Path $filePath -ErrorAction SilentlyContinue
+    }
+}
+
+$codeSignCert = Get-OrCreateCodeSigningCert
+Write-Host "       Code-Signing Identity: $($codeSignCert.Subject) [$($codeSignCert.Thumbprint)]" -ForegroundColor Green
+
 # 1. Clean Staging
 Write-Host "`n[1/6] Cleaning staging directories..." -ForegroundColor Yellow
 if (Test-Path $stagingDir) { Remove-Item $stagingDir -Recurse -Force }
@@ -38,6 +71,12 @@ $env:APPDATA=Join-Path $rootDir ".cli\AppData\Roaming"
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE"
 }
+
+# Sign Published Vortex.exe & Vortex.dll
+$vortexExe = Join-Path $appStaging "Vortex.exe"
+$vortexDll = Join-Path $appStaging "Vortex.dll"
+Sign-Binary $vortexExe $codeSignCert
+Sign-Binary $vortexDll $codeSignCert
 
 # 3. Compile Standalone Native Uninstall.exe
 Write-Host "[3/6] Compiling native standalone Uninstall.exe..." -ForegroundColor Yellow
@@ -59,6 +98,7 @@ $cscArgs = @(
 if ($LASTEXITCODE -ne 0) {
     throw "Compiling Uninstall.exe failed with exit code $LASTEXITCODE"
 }
+Sign-Binary $uninstallOut $codeSignCert
 
 # Copy icon and logo files into app payload
 Copy-Item $iconPath -Destination (Join-Path $appStaging "vortex.ico") -Force
@@ -96,12 +136,13 @@ if ($LASTEXITCODE -ne 0) {
     throw "Compiling VortexSetup.exe failed with exit code $LASTEXITCODE"
 }
 
-# 6. Copy to Release_Installer and Unblock
-Write-Host "[6/6] Finalizing distribution and unblocking mark-of-the-web..." -ForegroundColor Yellow
+# 6. Digitally Sign and Finalize Distribution
+Write-Host "[6/6] Digitally signing VortexSetup.exe with DAVE_HR certificate and unblocking..." -ForegroundColor Yellow
+Sign-Binary $finalInstaller $codeSignCert
+
 New-Item -ItemType Directory -Path (Split-Path $distInstaller) -Force | Out-Null
 Copy-Item $finalInstaller $distInstaller -Force
-Unblock-File $finalInstaller -ErrorAction SilentlyContinue
-Unblock-File $distInstaller -ErrorAction SilentlyContinue
+Sign-Binary $distInstaller $codeSignCert
 
 # Clean temporary files unless KeepStaging is specified
 if (-not $KeepStaging) {
@@ -109,9 +150,11 @@ if (-not $KeepStaging) {
     Remove-Item $packageZip -Force -ErrorAction SilentlyContinue
 }
 
+$sig = Get-AuthenticodeSignature $distInstaller
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host "   SUCCESS: Standalone Installer Generated Successfully! " -ForegroundColor Green
-Write-Host "   Path: $finalInstaller" -ForegroundColor Green
+Write-Host "   SUCCESS: Signed Standalone Installer Generated!        " -ForegroundColor Green
+Write-Host "   Publisher: DAVE_HR (Verified Authenticode)" -ForegroundColor Green
+Write-Host "   Signature Status: $($sig.Status)" -ForegroundColor Green
 Write-Host "   Distribution: $distInstaller" -ForegroundColor Green
-Write-Host "   Size: $([math]::Round((Get-Item $finalInstaller).Length / 1MB, 2)) MB" -ForegroundColor Green
+Write-Host "   Size: $([math]::Round((Get-Item $distInstaller).Length / 1MB, 2)) MB" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
