@@ -24,4 +24,5 @@ scratch/
 /VortexSetup.exe
 Installer/Setup/package.zip
 Installer/Payload/
+manifests/
 

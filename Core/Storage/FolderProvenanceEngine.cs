@@ -22,6 +22,14 @@ namespace Vortex.Core.Storage
             "assembly", "System Volume Information", "Default", "Public", "All Users"
         };
 
+        private static readonly HashSet<string> ProtectedVendorFolders = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Google", "Mozilla", "BraveSoftware", "Opera Software", "Microsoft", "Windows",
+            "Packages", "Apple", "Apple Computer", "Discord", "Spotify", "Steam",
+            "EpicGamesLauncher", "Telegram Desktop", "WhatsApp", "Dropbox", "OneDrive",
+            "Adobe", "JetBrains"
+        };
+
         private static readonly HashSet<string> JunkExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".tmp", ".temp", ".log", ".old", ".bak", ".chk", ".dmp", ".wer", ".etl",
@@ -137,7 +145,45 @@ namespace Vortex.Core.Storage
                             continue;
                         }
 
-                        // 3. Extension Content Sampling Upgrade: if >= 90% files are .tmp, .log, .old, .bak, upgrade to SafeToDelete
+                        // 3. Browser Profiles & Sensitive User Data / Protected Vendor Check (Priority 1 Safeguard)
+                        bool hasSensitiveData = ContainsSensitiveUserData(subDir);
+                        bool isProtectedVendor = ProtectedVendorFolders.Contains(dirName);
+
+                        if (hasSensitiveData || isProtectedVendor)
+                        {
+                            (string DisplayName, string Publisher) protAppInfo;
+                            bool isProtInstalled = _installedAppsCache.TryGetValue(dirName, out protAppInfo);
+                            if (!isProtInstalled)
+                            {
+                                var match = _installedAppsCache.Values.FirstOrDefault(a =>
+                                    a.DisplayName.StartsWith(dirName + " ", StringComparison.OrdinalIgnoreCase) ||
+                                    a.DisplayName.Contains(dirName, StringComparison.OrdinalIgnoreCase));
+                                if (match != default)
+                                {
+                                    protAppInfo = match;
+                                    isProtInstalled = true;
+                                }
+                            }
+
+                            results.Add(new FolderAttributionModel
+                            {
+                                Path = fullPath,
+                                FolderName = dirName,
+                                TotalSizeBytes = size,
+                                OwningApplication = isProtInstalled ? protAppInfo.DisplayName : dirName,
+                                Publisher = isProtInstalled ? protAppInfo.Publisher : "Protected Software Ecosystem",
+                                Category = "Protected Application & User Data",
+                                OwnerAccount = owner,
+                                Description = hasSensitiveData
+                                    ? $"Contains active user profiles, login databases, or browser authentication tokens for {dirName}."
+                                    : $"Protected software ecosystem directory for {dirName}.",
+                                Safety = CleanupSafety.CautionUserData,
+                                Recommendation = "Contains user profiles, saved logins, or application state. Protected against automated deletion to prevent losing accounts."
+                            });
+                            continue;
+                        }
+
+                        // 4. Extension Content Sampling Upgrade: if >= 90% files are .tmp, .log, .old, .bak, upgrade to SafeToDelete
                         if (analysis.SampledFilesCount >= 5 && analysis.JunkRatio >= 0.90)
                         {
                             results.Add(new FolderAttributionModel
@@ -156,11 +202,15 @@ namespace Vortex.Core.Storage
                             continue;
                         }
 
-                        // 4. Curated Fingerprint Pattern Match (Tier 1)
+                        // 5. Curated Fingerprint Pattern Match (Tier 1)
                         FolderFingerprint? matchedFp = null;
                         foreach (var fp in fingerprints)
                         {
-                            if (fullPath.Contains(fp.Pattern, StringComparison.OrdinalIgnoreCase))
+                            bool matches = fp.Pattern.Equals("Temp", StringComparison.OrdinalIgnoreCase)
+                                ? dirName.Equals("Temp", StringComparison.OrdinalIgnoreCase)
+                                : fullPath.Contains(fp.Pattern, StringComparison.OrdinalIgnoreCase);
+
+                            if (matches)
                             {
                                 matchedFp = fp;
                                 break;
@@ -185,8 +235,22 @@ namespace Vortex.Core.Storage
                             continue;
                         }
 
-                        // 5. Installed Applications Registry Match (Tier 2)
-                        if (_installedAppsCache.TryGetValue(dirName, out var appInfo))
+                        // 6. Installed Applications Registry Match (Tier 2: Exact or Prefix Match)
+                        (string DisplayName, string Publisher) appInfo;
+                        bool isInstalled = _installedAppsCache.TryGetValue(dirName, out appInfo);
+                        if (!isInstalled)
+                        {
+                            var match = _installedAppsCache.Values.FirstOrDefault(a =>
+                                a.DisplayName.StartsWith(dirName + " ", StringComparison.OrdinalIgnoreCase) ||
+                                a.DisplayName.Contains(dirName, StringComparison.OrdinalIgnoreCase));
+                            if (match != default)
+                            {
+                                appInfo = match;
+                                isInstalled = true;
+                            }
+                        }
+
+                        if (isInstalled)
                         {
                             results.Add(new FolderAttributionModel
                             {
@@ -204,8 +268,8 @@ namespace Vortex.Core.Storage
                             continue;
                         }
 
-                        // 6. Orphaned App Detection (Requirement 1: Not in Registry, Not Running, Not System)
-                        if (!SystemFolderWhitelist.Contains(dirName) && !dirName.StartsWith("."))
+                        // 7. Orphaned App Detection (Requirement 1: Not in Registry, Not Running, Not System, Not Protected Vendor)
+                        if (!SystemFolderWhitelist.Contains(dirName) && !ProtectedVendorFolders.Contains(dirName) && !dirName.StartsWith("."))
                         {
                             results.Add(new FolderAttributionModel
                             {
@@ -395,6 +459,47 @@ namespace Vortex.Core.Storage
 
             double ratio = sampledFilesCount > 0 ? (double)junkFilesCount / sampledFilesCount : 0.0;
             return (totalSize, sampledFilesCount, junkFilesCount, ratio);
+        }
+
+        private static bool ContainsSensitiveUserData(DirectoryInfo dir)
+        {
+            try
+            {
+                if (dir.Name.Equals("User Data", StringComparison.OrdinalIgnoreCase) ||
+                    dir.Name.Equals("Profiles", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                var subDirs = dir.GetDirectories();
+                foreach (var sub in subDirs)
+                {
+                    if (sub.Name.Equals("User Data", StringComparison.OrdinalIgnoreCase) ||
+                        sub.Name.Equals("Profiles", StringComparison.OrdinalIgnoreCase) ||
+                        sub.Name.Equals("Chrome", StringComparison.OrdinalIgnoreCase) ||
+                        sub.Name.Equals("Edge", StringComparison.OrdinalIgnoreCase) ||
+                        sub.Name.Equals("Brave-Browser", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+
+                    try
+                    {
+                        if (sub.EnumerateFiles().Any(f =>
+                            f.Name.Equals("Cookies", StringComparison.OrdinalIgnoreCase) ||
+                            f.Name.Equals("Login Data", StringComparison.OrdinalIgnoreCase) ||
+                            f.Name.Equals("Web Data", StringComparison.OrdinalIgnoreCase) ||
+                            f.Name.Equals("Preferences", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            return true;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+
+            return false;
         }
 
         private string GetDirectoryOwnerSafe(string directoryPath)

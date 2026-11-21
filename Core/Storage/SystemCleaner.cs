@@ -32,6 +32,33 @@ namespace Vortex.Core.Storage
     {
         private readonly DatabaseService _db;
 
+        private static readonly HashSet<string> ProtectedBrowserFiles = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Cookies", "Cookies-journal", "Login Data", "Login Data-journal",
+            "Web Data", "Web Data-journal", "Preferences", "Secure Preferences",
+            "Network Persistent State", "TransportSecurity", "Bookmarks", "History",
+            "Shortcuts", "Favicons", "Top Sites"
+        };
+
+        public static bool IsProtectedBrowserUserFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return false;
+            string fileName = Path.GetFileName(filePath);
+            if (ProtectedBrowserFiles.Contains(fileName)) return true;
+
+            if (filePath.Contains(@"\Sessions\", StringComparison.OrdinalIgnoreCase) ||
+                filePath.Contains(@"/Sessions/", StringComparison.OrdinalIgnoreCase) ||
+                filePath.Contains(@"\Local Storage\", StringComparison.OrdinalIgnoreCase) ||
+                filePath.Contains(@"/Local Storage/", StringComparison.OrdinalIgnoreCase) ||
+                filePath.Contains(@"\IndexedDB\", StringComparison.OrdinalIgnoreCase) ||
+                filePath.Contains(@"/IndexedDB/", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         public SystemCleaner(DatabaseService db)
         {
             _db = db;
@@ -200,6 +227,8 @@ namespace Vortex.Core.Storage
 
                     foreach (var file in EnumerateFilesSafe(path))
                     {
+                        if (IsProtectedBrowserUserFile(file.FullName)) continue;
+
                         try
                         {
                             long len = file.Length;
@@ -265,7 +294,7 @@ namespace Vortex.Core.Storage
                         }
                         catch { }
 
-                        if (fi != null && fi.Exists)
+                        if (fi != null && fi.Exists && !IsProtectedBrowserUserFile(fi.FullName))
                         {
                             yieldedCount++;
                             yield return fi;

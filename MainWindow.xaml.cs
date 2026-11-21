@@ -56,6 +56,7 @@ namespace Vortex
         private readonly IdentityScanner _identityScanner;
         private readonly WingetService _wingetService;
         private readonly ProcessBlockService _blockService;
+        private readonly TelemetryLockdownEngine _telemetryLockdown;
         private DispatcherTimer? _sensorTimer;
         private DispatcherTimer? _netAutoRefreshTimer;
         private bool _isNetAutoRefreshRunning = false;
@@ -99,6 +100,7 @@ namespace Vortex
             _vaultCrypto = new VaultCryptoEngine();
             _usbDlp = new UsbDlpService(_db);
             _folderLockService = new FolderLockService(_db, _vaultCrypto, _usbDlp);
+            _telemetryLockdown = new TelemetryLockdownEngine();
 
             _folderLockService.OnVaultStateChanged += () => Dispatcher.Invoke(RefreshVaultView);
             _folderLockService.OnLockedFolderAccessed += (vault) => Dispatcher.Invoke(() => OnLockedFolderAttemptDetected(vault));
@@ -541,14 +543,23 @@ namespace Vortex
             }
             else if (NavNetwork.IsChecked == true)
             {
-                TxtBreadcrumb.Text = "Process Network, Bandwidth & Threat Shield";
-                RefreshNetworkSockets();
-                if (!_isNetAutoRefreshRunning)
+                TxtBreadcrumb.Text = "App Privacy, Firewall & Threat Shield";
+                if (_allNetDiscoveredApps.Count == 0)
                 {
-                    _netAutoRefreshTimer?.Start();
-                    _isNetAutoRefreshRunning = true;
-                    BtnNetAutoRefresh.Content = "⏸️ Pause Auto-Refresh";
-                    BtnNetAutoRefresh.Style = (Style)FindResource("VortexPrimaryButton");
+                    _ = RefreshNetDiscoverAppsAsync();
+                }
+                UpdateTelemetryShieldButton();
+                UpdateNetSubTabBadges();
+                if (SubTabNetSockets.IsChecked == true)
+                {
+                    RefreshNetworkSockets();
+                    if (!_isNetAutoRefreshRunning)
+                    {
+                        _netAutoRefreshTimer?.Start();
+                        _isNetAutoRefreshRunning = true;
+                        BtnNetAutoRefresh.Content = "⏸️ Pause Auto-Refresh";
+                        BtnNetAutoRefresh.Style = (Style)FindResource("VortexPrimaryButton");
+                    }
                 }
             }
             else if (NavServices.IsChecked == true)
@@ -658,7 +669,7 @@ namespace Vortex
 
         private void ApplyProcessFilter()
         {
-            if (_allProcesses == null || _allProcesses.Count == 0) return;
+            if (_allProcesses == null || _allProcesses.Count == 0 || LvProcesses == null) return;
 
             string query = (TxtSearchBox?.Text ?? TxtProcessFilter?.Text ?? string.Empty).Trim();
 
@@ -969,7 +980,7 @@ namespace Vortex
 
         private void ApplyFolderVerdictFilter()
         {
-            if (_allFolders == null) return;
+            if (_allFolders == null || LvFolders == null) return;
 
             List<FolderAttributionModel> filtered;
 
@@ -1043,7 +1054,7 @@ namespace Vortex
                 }
                 else
                 {
-                    int count = filtered.Count(f => !f.IsRunningProcessLocked && f.Safety != CleanupSafety.ProtectedSystem && (f.Safety == CleanupSafety.OrphanedLeftover || f.Safety == CleanupSafety.SafeToDelete || f.Safety == CleanupSafety.SafeToCleanCache));
+                    int count = filtered.Count(f => !f.IsRunningProcessLocked && f.Safety != CleanupSafety.ProtectedSystem && f.Safety != CleanupSafety.CautionUserData && (f.Safety == CleanupSafety.OrphanedLeftover || f.Safety == CleanupSafety.SafeToDelete || f.Safety == CleanupSafety.SafeToCleanCache));
                     BtnCleanVerdict.Content = $"🧹 Clean Filtered ({count})";
                     BtnCleanVerdict.IsEnabled = count > 0;
                 }
@@ -1061,9 +1072,9 @@ namespace Vortex
                 return;
             }
 
-            // Select only safe items (not locked by active processes, not protected system)
+            // Select only safe items (not locked by active processes, not protected system, not caution user data)
             var candidates = currentView
-                .Where(f => !f.IsRunningProcessLocked && f.Safety != CleanupSafety.ProtectedSystem && (f.Safety == CleanupSafety.OrphanedLeftover || f.Safety == CleanupSafety.SafeToDelete || f.Safety == CleanupSafety.SafeToCleanCache))
+                .Where(f => !f.IsRunningProcessLocked && f.Safety != CleanupSafety.ProtectedSystem && f.Safety != CleanupSafety.CautionUserData && (f.Safety == CleanupSafety.OrphanedLeftover || f.Safety == CleanupSafety.SafeToDelete || f.Safety == CleanupSafety.SafeToCleanCache))
                 .ToList();
 
             if (candidates.Count == 0)
@@ -1429,7 +1440,7 @@ namespace Vortex
 
         private void ApplyNetworkFilter()
         {
-            if (_allNetworkConns == null) return;
+            if (_allNetworkConns == null || LvNetwork == null) return;
             string q = TxtNetFilter?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
 
             if (string.IsNullOrEmpty(q))
@@ -1667,19 +1678,79 @@ namespace Vortex
             if (SubTabNetSockets.IsChecked == true)
             {
                 RefreshNetworkSockets();
+                if (!_isNetAutoRefreshRunning)
+                {
+                    _netAutoRefreshTimer?.Start();
+                    _isNetAutoRefreshRunning = true;
+                    BtnNetAutoRefresh.Content = "⏸️ Pause Auto-Refresh";
+                    BtnNetAutoRefresh.Style = (Style)FindResource("VortexPrimaryButton");
+                }
             }
-            else if (SubTabNetDiscover.IsChecked == true)
+            else
             {
-                if (_allNetDiscoveredApps.Count == 0) _ = RefreshNetDiscoverAppsAsync();
+                if (_isNetAutoRefreshRunning)
+                {
+                    _netAutoRefreshTimer?.Stop();
+                    _isNetAutoRefreshRunning = false;
+                    BtnNetAutoRefresh.Content = "▶️ Auto-Refresh (2s)";
+                    BtnNetAutoRefresh.Style = (Style)FindResource("VortexSecondaryButton");
+                }
+
+                if (SubTabNetDiscover.IsChecked == true)
+                {
+                    if (_allNetDiscoveredApps.Count == 0) _ = RefreshNetDiscoverAppsAsync();
+                    UpdateTelemetryShieldButton();
+                }
+                else if (SubTabNetAllowed.IsChecked == true)
+                {
+                    RefreshNetAllowedApps();
+                }
+                else if (SubTabNetBlocked.IsChecked == true)
+                {
+                    RefreshNetBlockedApps();
+                }
             }
-            else if (SubTabNetAllowed.IsChecked == true)
+        }
+
+        private void UpdateTelemetryShieldButton()
+        {
+            if (BtnToggleTelemetryShield == null) return;
+            bool isShielded = _telemetryLockdown.IsFullyLockedDown();
+            if (isShielded)
             {
-                RefreshNetAllowedApps();
+                BtnToggleTelemetryShield.Content = "✓ Telemetry: 100% SHIELDED";
+                BtnToggleTelemetryShield.Style = (Style)FindResource("VortexSecondaryButton");
             }
-            else if (SubTabNetBlocked.IsChecked == true)
+            else
             {
-                RefreshNetBlockedApps();
+                BtnToggleTelemetryShield.Content = "🛡️ Permanent Telemetry Shield";
+                BtnToggleTelemetryShield.Style = (Style)FindResource("VortexPrimaryButton");
             }
+        }
+
+        private void OnToggleTelemetryShieldClick(object sender, RoutedEventArgs e)
+        {
+            bool isShielded = _telemetryLockdown.IsFullyLockedDown();
+            if (isShielded)
+            {
+                bool confirmed = VortexDialogWindow.ShowConfirm(this, "Restore Telemetry Defaults",
+                    "Do you want to re-enable standard Windows and browser telemetry reporters and remove the hosts file blackhole?",
+                    "Restore Defaults");
+                if (!confirmed) return;
+
+                var (ok, msg) = _telemetryLockdown.RevertLockdown();
+                _blockService.UnshieldBrowserTelemetry();
+                VortexDialogWindow.ShowSuccess(this, "Telemetry Restored", "Standard", "Restored", msg);
+            }
+            else
+            {
+                var (ok, summary) = _telemetryLockdown.ApplyCompleteLockdown();
+                _blockService.ShieldBrowserTelemetry();
+                VortexDialogWindow.ShowSuccess(this, "Permanent Telemetry Lockdown Active", "4-Layer Protection Active", "Zero Telemetry", summary);
+            }
+            UpdateTelemetryShieldButton();
+            RefreshNetBlockedApps();
+            _ = RefreshNetDiscoverAppsAsync();
         }
 
         private async Task RefreshNetDiscoverAppsAsync()
@@ -1958,12 +2029,29 @@ namespace Vortex
         #region TAB 6: Services Controller
         private List<ServiceItemModel> _allServices = new();
 
-        private void RefreshServicesList()
+        private async void RefreshServicesList()
         {
-            TxtStatusBar.Text = "Enumerating Windows services via sc.exe...";
-            _allServices = _svcController.GetOptimizableServices();
+            if (TxtStatusBar != null) TxtStatusBar.Text = "Enumerating all Windows & third-party background services...";
+            var services = await Task.Run(() => _svcController.GetAllServices());
+            _allServices = services ?? new List<ServiceItemModel>();
+            UpdateServiceBadges();
             ApplyServicesFilter();
-            TxtStatusBar.Text = $"Loaded {_allServices.Count} optimizable background services.";
+            if (TxtStatusBar != null) TxtStatusBar.Text = $"Loaded {_allServices.Count} Windows services ({_allServices.Count(s => s.IsRunning)} active).";
+        }
+
+        private void UpdateServiceBadges()
+        {
+            if (_allServices == null) return;
+            if (RbSvcAll != null) RbSvcAll.Content = $"All Services ({_allServices.Count})";
+            if (RbSvcRunning != null) RbSvcRunning.Content = $"🟢 Running ({_allServices.Count(s => s.IsRunning)})";
+            if (RbSvcBloat != null) RbSvcBloat.Content = $"⚡ Bloat / Safe to Disable ({_allServices.Count(s => s.IsBloat)})";
+            if (RbSvcThirdParty != null) RbSvcThirdParty.Content = $"📦 Third-Party ({_allServices.Count(s => s.IsThirdParty)})";
+        }
+
+        private void OnServiceCategoryFilterChanged(object sender, RoutedEventArgs e)
+        {
+            if (LvServices == null || _allServices == null) return;
+            ApplyServicesFilter();
         }
 
         private void OnServiceFilterChanged(object sender, TextChangedEventArgs e)
@@ -1979,21 +2067,35 @@ namespace Vortex
 
         private void ApplyServicesFilter()
         {
-            if (_allServices == null) return;
-            string q = TxtServiceFilter?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
-            if (string.IsNullOrEmpty(q))
+            if (_allServices == null || LvServices == null) return;
+            var filtered = _allServices;
+
+            if (RbSvcRunning?.IsChecked == true)
             {
-                LvServices.ItemsSource = _allServices;
+                filtered = filtered.Where(s => s.IsRunning).ToList();
             }
-            else
+            else if (RbSvcBloat?.IsChecked == true)
             {
-                LvServices.ItemsSource = _allServices.Where(s =>
+                filtered = filtered.Where(s => s.IsBloat).ToList();
+            }
+            else if (RbSvcThirdParty?.IsChecked == true)
+            {
+                filtered = filtered.Where(s => s.IsThirdParty).ToList();
+            }
+
+            string q = TxtServiceFilter?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (!string.IsNullOrEmpty(q))
+            {
+                filtered = filtered.Where(s =>
                     (s.ServiceName != null && s.ServiceName.ToLowerInvariant().Contains(q)) ||
                     (s.DisplayName != null && s.DisplayName.ToLowerInvariant().Contains(q)) ||
                     (s.Status != null && s.Status.ToLowerInvariant().Contains(q)) ||
-                    (s.Impact != null && s.Impact.ToLowerInvariant().Contains(q)) ||
+                    (s.Category != null && s.Category.ToLowerInvariant().Contains(q)) ||
+                    (s.StartupTypeDisplay != null && s.StartupTypeDisplay.ToLowerInvariant().Contains(q)) ||
                     (s.Recommendation != null && s.Recommendation.ToLowerInvariant().Contains(q))).ToList();
             }
+
+            LvServices.ItemsSource = filtered;
         }
 
         private void OnRefreshServicesClick(object sender, RoutedEventArgs e)
@@ -2007,9 +2109,39 @@ namespace Vortex
             {
                 bool targetStart = !svc.IsRunning;
                 var (success, msg) = _svcController.ToggleService(svc.ServiceName, targetStart);
-                TxtStatusBar.Text = msg;
+                if (TxtStatusBar != null) TxtStatusBar.Text = msg;
                 RefreshServicesList();
             }
+        }
+
+        private void OnCycleStartupTypeClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is ServiceItemModel svc)
+            {
+                string nextType = svc.StartupTypeDisplay switch
+                {
+                    "Automatic" => "demand",
+                    "Manual" => "disabled",
+                    "Disabled" => "auto",
+                    _ => "demand"
+                };
+
+                var (success, msg) = _svcController.SetStartupType(svc.ServiceName, nextType);
+                if (TxtStatusBar != null) TxtStatusBar.Text = msg;
+                RefreshServicesList();
+            }
+        }
+
+        private void OnDebloatServicesClick(object sender, RoutedEventArgs e)
+        {
+            bool confirmed = VortexDialogWindow.ShowConfirm(this, "Disable Bloat Services",
+                "This will permanently set safe non-essential Windows background services (Fax, Diagnostic Tracking, Error Reporting, Offline Maps, Store Demos) to Disabled.\n\nWould you like to proceed?",
+                "Disable Bloat Services");
+            if (!confirmed) return;
+
+            var (count, summary) = _svcController.DebloatSafeServices();
+            VortexDialogWindow.ShowSuccess(this, "Windows Bloat Services Disabled", $"{count} Services Disabled", "Persistent Lockdown", summary);
+            RefreshServicesList();
         }
         #endregion
 

@@ -828,17 +828,17 @@
                     <!-- Network Shield Segmented Sub-Tab Bar -->
                     <DockPanel Grid.Row="2" Margin="0,0,0,10">
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                            <RadioButton x:Name="SubTabNetSockets" Style="{StaticResource SidebarRadioButton}" Content="🌐 Live Sockets &amp; Traffic" IsChecked="True" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="190" />
-                            <RadioButton x:Name="SubTabNetDiscover" Style="{StaticResource SidebarRadioButton}" Content="📱 Choose &amp; Manage PC Apps" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="215" />
-                            <RadioButton x:Name="SubTabNetAllowed" Style="{StaticResource SidebarRadioButton}" Content="🛡️ Allowed Apps (0)" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="160" />
+                            <RadioButton x:Name="SubTabNetDiscover" Style="{StaticResource SidebarRadioButton}" Content="🛡️ App Privacy &amp; Firewall Control" IsChecked="True" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="260" />
                             <RadioButton x:Name="SubTabNetBlocked" Style="{StaticResource SidebarRadioButton}" Content="🚫 Blocked Apps (0)" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="160" />
+                            <RadioButton x:Name="SubTabNetAllowed" Style="{StaticResource SidebarRadioButton}" Content="✅ Trusted Apps (0)" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="160" />
+                            <RadioButton x:Name="SubTabNetSockets" Style="{StaticResource SidebarRadioButton}" Content="🔍 Advanced Socket Explorer" Checked="OnNetSubTabChanged" Margin="0,0,8,0" Height="32" Width="210" />
                         </StackPanel>
                     </DockPanel>
 
                     <!-- Dynamic Sub-Views Container -->
                     <Grid Grid.Row="3">
-                        <!-- VIEW A: Live Sockets Table -->
-                        <Grid x:Name="ViewNetSockets" Visibility="Visible">
+                        <!-- VIEW A: Live Sockets Table (Advanced Explorer) -->
+                        <Grid x:Name="ViewNetSockets" Visibility="Collapsed">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
@@ -1009,14 +1009,26 @@
                             </Border>
                         </Grid>
 
-                        <!-- VIEW B: Choose & Manage PC Apps (All Detected) -->
-                        <Grid x:Name="ViewNetDiscover" Visibility="Collapsed">
+                        <!-- VIEW B: App Privacy & Firewall Control (Primary View) -->
+                        <Grid x:Name="ViewNetDiscover" Visibility="Visible">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                            <!-- Privacy & Telemetry Shield Header Card -->
+                            <Border Grid.Row="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,10">
+                                <DockPanel>
+                                    <Button x:Name="BtnToggleTelemetryShield" Style="{StaticResource VortexPrimaryButton}" Content="🛡️ Shield Browser Telemetry" Click="OnToggleTelemetryShieldClick" DockPanel.Dock="Right" VerticalAlignment="Center" Height="32" Padding="12,4" />
+                                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <TextBlock Text="🌐 BROWSER &amp; OS TELEMETRY SILENCER" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                        <TextBlock Text="Block background Google Chrome, Edge, and Windows crash reporters and usage telemetry while leaving your web browsing 100% functional." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <DockPanel Grid.Row="1" Margin="0,0,0,10">
                                 <Grid DockPanel.Dock="Left" Width="360">
                                     <TextBox x:Name="TxtNetDiscoverFilter" Style="{StaticResource FluentSearchBox}"
                                              Padding="10,6,28,6" Height="32"
@@ -1037,7 +1049,7 @@
                                 </StackPanel>
                             </DockPanel>
 
-                            <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                            <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
                                 <ListView x:Name="LvNetDiscoverApps" SelectionMode="Single">
                                     <ListView.View>
                                         <GridView>
@@ -1245,21 +1257,23 @@
                 <Grid x:Name="PanelServices" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0" Margin="0,0,0,14">
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
                         <StackPanel DockPanel.Dock="Left">
-                            <TextBlock Text="Windows Services" Style="{StaticResource TitleHeaderStyle}" />
-                            <TextBlock Text="Manage background services to optimize memory." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                            <TextBlock Text="Windows Services &amp; Bloat Controller" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Live enumeration of all Windows and third-party services with persistent startup mode control." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
                         </StackPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Grid Width="200" Margin="0,0,8,0">
+                            <Button x:Name="BtnDebloatServices" Style="{StaticResource VortexPrimaryButton}" Content="⚡ 1-Click Debloat Services" Click="OnDebloatServicesClick" Height="32" Margin="0,0,8,0" ToolTip="Disable and stop safe non-essential background bloat services (DiagTrack, WerSvc, Fax, Maps, Xbox)" />
+                            <Grid Width="220" Margin="0,0,8,0">
                                 <TextBox x:Name="TxtServiceFilter" Style="{StaticResource FluentSearchBox}"
                                          Padding="10,6,28,6" Height="32"
                                          TextChanged="OnServiceFilterChanged"
                                          ToolTip="Filter services by name, display title, or status" />
-                                <TextBlock x:Name="TxtServiceFilterPlaceholder" Text="Filter services..."
+                                <TextBlock x:Name="TxtServiceFilterPlaceholder" Text="Filter all services..."
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            VerticalAlignment="Center" Margin="10,0,0,0"
                                            IsHitTestVisible="False" FontSize="11" />
@@ -1267,23 +1281,87 @@
                                            HorizontalAlignment="Right" VerticalAlignment="Center"
                                            Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
                             </Grid>
-                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Rescan Services" Click="OnRefreshServicesClick" Height="32" />
+                            <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Rescan" Click="OnRefreshServicesClick" Height="32" />
                         </StackPanel>
                     </DockPanel>
 
-                    <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                    <!-- Service Filter Pills -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+                        <RadioButton x:Name="RbSvcAll" Content="All Services (0)" IsChecked="True" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="130" Margin="0,0,6,0" />
+                        <RadioButton x:Name="RbSvcRunning" Content="🟢 Running (0)" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="120" Margin="0,0,6,0" />
+                        <RadioButton x:Name="RbSvcBloat" Content="⚡ Bloat / Safe to Disable (0)" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="190" Margin="0,0,6,0" />
+                        <RadioButton x:Name="RbSvcThirdParty" Content="📦 Third-Party (0)" Checked="OnServiceCategoryFilterChanged" Style="{StaticResource SidebarRadioButton}" Height="28" Width="140" />
+                    </StackPanel>
+
+                    <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
                         <ListView x:Name="LvServices">
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Service Name" Width="140" DisplayMemberBinding="{Binding ServiceName}" />
-                                    <GridViewColumn Header="Display Title" Width="240" DisplayMemberBinding="{Binding DisplayName}" />
-                                    <GridViewColumn Header="Status" Width="90" DisplayMemberBinding="{Binding Status}" />
-                                    <GridViewColumn Header="RAM Impact" Width="90" DisplayMemberBinding="{Binding Impact}" />
-                                    <GridViewColumn Header="Recommendation" Width="320" DisplayMemberBinding="{Binding Recommendation}" />
-                                    <GridViewColumn Header="Action" Width="100">
+                                    <GridViewColumn Header="Service &amp; Application" Width="230">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Style="{StaticResource VortexSecondaryButton}" Content="Toggle" Click="OnToggleServiceRowClick" Padding="10,3" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                                <StackPanel Orientation="Horizontal" ToolTip="{Binding ExecutablePath}">
+                                                    <TextBlock Text="{Binding IconGlyph}" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding ServiceName}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="State" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="#18FFFFFF" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                                    <Setter Property="Background" Value="#2500E599" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="Bold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource StatusSafeBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Startup Mode" Width="110">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#12FFFFFF">
+                                                    <TextBlock Text="{Binding StartupTypeDisplay}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+
+                                    <GridViewColumn Header="Category" Width="160" DisplayMemberBinding="{Binding Category}" />
+                                    <GridViewColumn Header="Recommendation" Width="260" DisplayMemberBinding="{Binding Recommendation}" />
+
+                                    <GridViewColumn Header="Actions" Width="200">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="{Binding RunActionLabel}" Click="OnToggleServiceRowClick" Padding="8,3" FontSize="10" Margin="0,0,4,0" Foreground="{DynamicResource AccentPrimaryBrush}" ToolTip="Start or stop service process immediately" />
+                                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="⚙️ Mode" Click="OnCycleStartupTypeClick" Padding="8,3" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip="Cycle startup mode: Automatic -> Manual -> Disabled (Survives PC reboots)" />
+                                                </StackPanel>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>

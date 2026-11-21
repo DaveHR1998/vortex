@@ -273,6 +273,85 @@ namespace Vortex.Core.ProcessManagement
             }
         }
 
+        public static readonly string[] TelemetryTargetProcessNames = new[]
+        {
+            "GoogleCrashHandler.exe",
+            "GoogleCrashHandler64.exe",
+            "MicrosoftEdgeUpdate.exe",
+            "CompatTelRunner.exe",
+            "DeviceCensus.exe"
+        };
+
+        public bool IsBrowserTelemetryShielded()
+        {
+            var blocked = GetBlockedItems();
+            return blocked.Any(b => b.ProcessName.Equals("GoogleCrashHandler.exe", StringComparison.OrdinalIgnoreCase) ||
+                                    b.ProcessName.Equals("MicrosoftEdgeUpdate.exe", StringComparison.OrdinalIgnoreCase));
+        }
+
+        public (int ShieldedCount, string Details) ShieldBrowserTelemetry()
+        {
+            int count = 0;
+
+            // 1. Kill any active background telemetry reporters
+            foreach (var name in new[] { "GoogleCrashHandler", "GoogleCrashHandler64", "MicrosoftEdgeUpdate", "CompatTelRunner" })
+            {
+                try
+                {
+                    foreach (var p in Process.GetProcessesByName(name))
+                    {
+                        try { p.Kill(true); } catch { }
+                    }
+                }
+                catch { }
+            }
+
+            // 2. Discover known telemetry executables on disk
+            var candidatePaths = new List<string>();
+            string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
+            candidatePaths.Add(Path.Combine(programFiles, "Google", "Update", "GoogleCrashHandler.exe"));
+            candidatePaths.Add(Path.Combine(programFiles, "Google", "Update", "GoogleCrashHandler64.exe"));
+            candidatePaths.Add(Path.Combine(programFilesX86, "Google", "Update", "GoogleCrashHandler.exe"));
+            candidatePaths.Add(Path.Combine(programFilesX86, "Google", "Update", "GoogleCrashHandler64.exe"));
+            candidatePaths.Add(Path.Combine(localAppData, "Google", "Update", "GoogleCrashHandler.exe"));
+            candidatePaths.Add(Path.Combine(localAppData, "Google", "Update", "GoogleCrashHandler64.exe"));
+            candidatePaths.Add(Path.Combine(programFilesX86, "Microsoft", "EdgeUpdate", "MicrosoftEdgeUpdate.exe"));
+            candidatePaths.Add(Path.Combine(programFiles, "Microsoft", "EdgeUpdate", "MicrosoftEdgeUpdate.exe"));
+            candidatePaths.Add(Path.Combine(winDir, "System32", "CompatTelRunner.exe"));
+            candidatePaths.Add(Path.Combine(winDir, "System32", "DeviceCensus.exe"));
+
+            foreach (var path in candidatePaths)
+            {
+                if (File.Exists(path))
+                {
+                    string fileName = Path.GetFileName(path);
+                    var (ok, _) = BlockFromInternet(fileName, path);
+                    if (ok) count++;
+                }
+            }
+
+            // Also persist known targets to blocked rules list
+            foreach (var procName in TelemetryTargetProcessNames)
+            {
+                SaveBlockedItem(procName, "Telemetry / Diagnostic Reporter", "FIREWALL");
+            }
+
+            return (count, $"Shielded {count} background browser and OS telemetry reporters.");
+        }
+
+        public (bool Success, string Message) UnshieldBrowserTelemetry()
+        {
+            foreach (var procName in TelemetryTargetProcessNames)
+            {
+                UnblockInternet(procName);
+            }
+            return (true, "Browser telemetry shield deactivated. Normal reporter connectivity restored.");
+        }
+
         public (bool Success, string Message) BlockExecution(string procName, string exePath)
         {
             if (IsProtected(procName))

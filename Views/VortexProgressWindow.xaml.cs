@@ -125,6 +125,12 @@ namespace Vortex.Views
 
             foreach (var folder in candidates)
             {
+                // Fail-safe: Never bulk delete ProtectedSystem or CautionUserData folders
+                if (folder.Safety == CleanupSafety.ProtectedSystem || folder.Safety == CleanupSafety.CautionUserData)
+                {
+                    continue;
+                }
+
                 string label = Path.GetFileName(folder.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
                 long sz = 0;
 
@@ -189,6 +195,8 @@ namespace Vortex.Views
 
                         foreach (var file in EnumerateFilesSafe(path))
                         {
+                            if (SystemCleaner.IsProtectedBrowserUserFile(file.FullName)) continue;
+
                             try
                             {
                                 long len = file.Length;
@@ -250,6 +258,7 @@ namespace Vortex.Views
 
                 foreach (var f in files)
                 {
+                    if (SystemCleaner.IsProtectedBrowserUserFile(f.FullName)) continue;
                     yield return f;
                     yielded++;
                     if (yielded >= maxFiles) yield break;
