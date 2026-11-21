@@ -21,6 +21,7 @@ namespace Vortex.Tests
             Test_InMemorySecretZeroization();
             Test_BrowserProfileAndUserDataZeroWipeProtection();
             Test_PermanentTelemetryLockdownEngine();
+            Test_PrivacyEraserFullSpectrumScanAndSafeClipboardPreservation();
         }
 
         private static void Test_ZeroByteAndEmptyDirPreservation()
@@ -349,6 +350,51 @@ namespace Vortex.Tests
                 throw new Exception("TelemetryLockdownEngine returned invalid boolean state!");
 
             TestRunner.Pass("Privacy: Permanent 4-Layer Telemetry Lockdown Engine (Zero OS & Browser Spying)");
+        }
+
+        private static void Test_PrivacyEraserFullSpectrumScanAndSafeClipboardPreservation()
+        {
+            var eraser = new Vortex.Core.Privacy.PrivacyEraser();
+            var traces = eraser.ScanAllTraces();
+
+            if (traces == null || traces.Count < 10)
+                throw new Exception($"Expected at least 10 privacy trace categories, got {traces?.Count ?? 0}");
+
+            var names = traces.Select(t => t.Name).ToHashSet();
+            string[] requiredCategories = new[]
+            {
+                "Clipboard & History",
+                "Recent Files",
+                "Taskbar Jump Lists",
+                "Common File Dialog History",
+                "Explorer Typed Paths",
+                "MRU (Most Recently Used)",
+                "Windows Search History",
+                "Run Dialog History",
+                "PowerShell Command History",
+                "Thumbnail Cache",
+                "Prefetch Files"
+            };
+
+            foreach (var req in requiredCategories)
+            {
+                if (!names.Contains(req))
+                    throw new Exception($"PrivacyEraser scan missing critical trace category: {req}");
+            }
+
+            // Verify Clipboard Eraser doesn't disable HKCU\Software\Microsoft\Clipboard
+            var clipboardItem = traces.First(t => t.Name == "Clipboard & History");
+            eraser.EraseSelected(new[] { clipboardItem });
+
+            using var clipKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Clipboard");
+            if (clipKey == null)
+                throw new Exception("Clipboard registry key was deleted! It must be preserved so Clipboard History works.");
+
+            var enabled = clipKey.GetValue("EnableClipboardHistory");
+            if (enabled == null || Convert.ToInt32(enabled) != 1)
+                throw new Exception("EnableClipboardHistory was turned off or missing!");
+
+            TestRunner.Pass("Privacy: Full-Spectrum Activity Trace Eraser & Zero-Clipboard-Disable Guarantee");
         }
     }
 }
