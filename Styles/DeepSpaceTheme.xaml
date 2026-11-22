@@ -159,20 +159,23 @@
         </Setter>
     </Style>
 
-    <!-- Custom Fluent ProgressBar (Brightened High-Contrast Track) -->
+    <!-- Custom Fluent ProgressBar with Determinate & Indeterminate Support -->
     <Style TargetType="ProgressBar">
         <Setter Property="Height" Value="7" />
-        <Setter Property="Background" Value="#393A56" />
-        <Setter Property="Foreground" Value="{DynamicResource AccentGlowBrush}" />
+        <Setter Property="Background" Value="#252438" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
-                    <Grid>
-                        <Border Background="{TemplateBinding Background}" CornerRadius="3.5" />
+                    <Grid x:Name="TemplateRoot" ClipToBounds="True">
+                        <!-- Progress Track -->
+                        <Border x:Name="PART_TrackBorder" Background="{TemplateBinding Background}" CornerRadius="3.5" />
+
+                        <!-- Determinate Track Indicator -->
                         <Track x:Name="PART_Track">
                             <Track.DecreaseRepeatButton>
-                                <RepeatButton>
+                                <RepeatButton Focusable="False">
                                     <RepeatButton.Template>
                                         <ControlTemplate TargetType="RepeatButton">
                                             <Border Background="{TemplateBinding Foreground}" CornerRadius="3.5" />
@@ -181,7 +184,45 @@
                                 </RepeatButton>
                             </Track.DecreaseRepeatButton>
                         </Track>
+
+                        <!-- Indeterminate Glowing Indicator (Active when IsIndeterminate=True) -->
+                        <Border x:Name="IndeterminateIndicator"
+                                CornerRadius="3.5"
+                                HorizontalAlignment="Left"
+                                Width="140"
+                                Visibility="Collapsed">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#006366F1" Offset="0.0" />
+                                    <GradientStop Color="#FF6366F1" Offset="0.5" />
+                                    <GradientStop Color="#FF818CF8" Offset="0.75" />
+                                    <GradientStop Color="#006366F1" Offset="1.0" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.RenderTransform>
+                                <TranslateTransform x:Name="IndeterminateTranslate" X="-140" />
+                            </Border.RenderTransform>
+                        </Border>
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsIndeterminate" Value="True">
+                            <Setter TargetName="PART_Track" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="IndeterminateIndicator" Property="Visibility" Value="Visible" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard x:Name="IndeterminateStoryboard">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="IndeterminateTranslate"
+                                                         Storyboard.TargetProperty="X"
+                                                         From="-140" To="600"
+                                                         Duration="0:0:1.6" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="IndeterminateStoryboard" />
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

@@ -449,7 +449,7 @@ namespace Vortex
                     ? (Brush)FindResource("StatusDangerBrush")
                     : (mem.loadPercent >= 75
                         ? (Brush)FindResource("StatusWarningBrush")
-                        : (Brush)FindResource("TextPrimaryBrush"));
+                        : (Brush)FindResource("AccentPrimaryBrush"));
                 TxtHeaderRam.Foreground = ramBrush;
 
                 if (TxtOverviewRamLoad != null)
@@ -457,7 +457,11 @@ namespace Vortex
                     TxtOverviewRamLoad.Text = $"{mem.loadPercent}% ({usedGb:F1} / {totalGb:F0} GB)";
                     TxtOverviewRamLoad.Foreground = ramBrush;
                 }
-                if (PbOverviewRam != null) PbOverviewRam.Value = mem.loadPercent;
+                if (PbOverviewRam != null)
+                {
+                    PbOverviewRam.Value = mem.loadPercent;
+                    PbOverviewRam.Foreground = ramBrush;
+                }
                 if (TxtOverviewRamDetails != null) TxtOverviewRamDetails.Text = $"({availGb:F1} GB available)";
 
                 float cpu = _hardwareMonitor.GetCpuUsagePercentage();
@@ -466,7 +470,7 @@ namespace Vortex
                     ? (Brush)FindResource("StatusDangerBrush")
                     : (cpu >= 70
                         ? (Brush)FindResource("StatusWarningBrush")
-                        : (Brush)FindResource("TextPrimaryBrush"));
+                        : (Brush)FindResource("AccentPrimaryBrush"));
                 TxtHeaderCpu.Foreground = cpuBrush;
 
                 if (TxtOverviewCpuLoad != null)
@@ -474,7 +478,11 @@ namespace Vortex
                     TxtOverviewCpuLoad.Text = $"{cpu:F0}%";
                     TxtOverviewCpuLoad.Foreground = cpuBrush;
                 }
-                if (PbOverviewCpu != null) PbOverviewCpu.Value = cpu;
+                if (PbOverviewCpu != null)
+                {
+                    PbOverviewCpu.Value = cpu;
+                    PbOverviewCpu.Foreground = cpuBrush;
+                }
                 if (TxtOverviewCpuDetails != null) TxtOverviewCpuDetails.Text = $"({Environment.ProcessorCount} Cores)";
 
                 var drive = _hardwareMonitor.GetDriveStorage("C");
@@ -483,7 +491,7 @@ namespace Vortex
                     ? (Brush)FindResource("StatusDangerBrush")
                     : (drive.usedPercentage >= 75
                         ? (Brush)FindResource("StatusWarningBrush")
-                        : (Brush)FindResource("TextPrimaryBrush"));
+                        : (Brush)FindResource("AccentPrimaryBrush"));
                 TxtHeaderDisk.Foreground = diskBrush;
 
                 if (TxtOverviewDiskLoad != null)
@@ -491,7 +499,11 @@ namespace Vortex
                     TxtOverviewDiskLoad.Text = $"{drive.usedPercentage:F0}% ({drive.freeBytes / (1024.0 * 1024.0 * 1024.0):F0} GB Free)";
                     TxtOverviewDiskLoad.Foreground = diskBrush;
                 }
-                if (PbOverviewDisk != null) PbOverviewDisk.Value = drive.usedPercentage;
+                if (PbOverviewDisk != null)
+                {
+                    PbOverviewDisk.Value = drive.usedPercentage;
+                    PbOverviewDisk.Foreground = diskBrush;
+                }
                 if (TxtOverviewDiskDetails != null) TxtOverviewDiskDetails.Text = $"({drive.totalBytes / (1024.0 * 1024.0 * 1024.0):F0} GB Total)";
 
                 if (TxtOverviewUptime != null)
