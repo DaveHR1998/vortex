@@ -38,7 +38,7 @@ namespace Vortex.Core.SystemIntegration
 
                 // Dark Translucent Panels (Level 1 Frosted Glass)
                 res["SidebarGlassBrush"] = new SolidColorBrush(Color.FromArgb(0x70, 0x25, 0x25, 0x37));
-                res["MainAreaGlassBrush"] = new SolidColorBrush(Color.FromArgb(0x58, 0x25, 0x25, 0x37));
+                res["MainAreaGlassBrush"] = Brushes.Transparent;
 
                 // Opaque Dark Cards & Dialog Surfaces (Never see-through)
                 res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromRgb(0x25, 0x25, 0x37));
@@ -89,7 +89,7 @@ namespace Vortex.Core.SystemIntegration
 
                 // Light Translucent Frosted Glass Panels (Clean pearl aesthetics)
                 res["SidebarGlassBrush"] = new SolidColorBrush(Color.FromArgb(0xDD, 0xFF, 0xFF, 0xFF));
-                res["MainAreaGlassBrush"] = new SolidColorBrush(Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF));
+                res["MainAreaGlassBrush"] = Brushes.Transparent;
 
                 // Opaque Solid Clean White Surfaces (Zero bleed-through on dialogs and cards)
                 res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xFF));

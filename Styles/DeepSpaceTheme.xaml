@@ -12,7 +12,7 @@
     <!-- Base Theme Brushes (Calibrated to User Theme Palette - Level 1 Frosted Glass) -->
     <SolidColorBrush x:Key="CanvasBgBrush" Color="#16161D" />
     <SolidColorBrush x:Key="SidebarGlassBrush" Color="#70252537" />
-    <SolidColorBrush x:Key="MainAreaGlassBrush" Color="#58252537" />
+    <SolidColorBrush x:Key="MainAreaGlassBrush" Color="Transparent" />
     <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#252537" />
     <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#393A56" />
     <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#80252537" />
@@ -691,9 +691,9 @@
                 Background="{TemplateBinding Background}"
                 BorderBrush="{TemplateBinding BorderBrush}"
                 BorderThickness="{TemplateBinding BorderThickness}"
-                CornerRadius="8"
+                CornerRadius="6"
                 SnapsToDevicePixels="True">
-            <Border Background="Transparent" HorizontalAlignment="Right" Width="26">
+            <Border Background="Transparent" HorizontalAlignment="Right" Width="28">
                 <Path x:Name="Arrow"
                       Data="M 0 0 L 4 4 L 8 0"
                       Stroke="{DynamicResource TextSecondaryBrush}"
@@ -719,7 +719,8 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="12,0" />
         <Setter Property="Margin" Value="0,1" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
@@ -730,7 +731,7 @@
                             Background="{TemplateBinding Background}"
                             CornerRadius="6"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" />
+                        <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
@@ -752,20 +753,23 @@
     </Style>
 
     <Style TargetType="ComboBox">
-        <Setter Property="Background" Value="{DynamicResource SurfaceSubtleBrush}" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceDarkBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="Padding" Value="12,0,28,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
-                    <Grid SnapsToDevicePixels="True">
+                    <Grid SnapsToDevicePixels="True" Height="{TemplateBinding Height}" MinHeight="{TemplateBinding MinHeight}">
                         <ToggleButton Name="ToggleButton"
                                       Template="{StaticResource ComboBoxToggleButton}"
                                       Background="{TemplateBinding Background}"
@@ -780,7 +784,7 @@
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
                                           TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
-                                          Margin="10,0,28,0"
+                                          Margin="12,0,28,0"
                                           VerticalAlignment="Center"
                                           HorizontalAlignment="Left" />
                         <Popup Name="PART_Popup"
