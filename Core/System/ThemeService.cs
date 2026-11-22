@@ -22,25 +22,26 @@ namespace Vortex.Core.SystemIntegration
 
             if (darkMode)
             {
-                // Vortex Signature: Cosmic Violet & Electric Azure Aurora + Deep Obsidian Navy Base
-                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0x07, 0x0A, 0x12));
+                // Vortex Lighter Cosmic Violet & Azure Aurora + Translucent Frosted Glass
+                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0x0F, 0x14, 0x24));
                 
                 var darkAtmosphere = new LinearGradientBrush
                 {
                     StartPoint = new Point(0.5, 0),
                     EndPoint = new Point(0.5, 1)
                 };
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x1C, 0x13, 0x35), 0.0));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x10, 0x1C, 0x38), 0.30));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x0A, 0x0F, 0x1F), 0.70));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x07, 0x0A, 0x12), 1.0));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x26, 0x1B, 0x46), 0.0));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x18, 0x26, 0x4D), 0.30));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x12, 0x18, 0x2E), 0.70));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x0F, 0x14, 0x24), 1.0));
                 res["AtmosphericGradient"] = darkAtmosphere;
 
-                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0xEE, 0x0F, 0x14, 0x24));
-                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0xF2, 0x16, 0x1C, 0x30));
-                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0xB0, 0x11, 0x16, 0x28));
-                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0x45, 0x2C, 0x38, 0x60));
-                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x85, 0x45, 0x5C, 0xA0));
+                // Translucent floating glass cards
+                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0x40, 0x12, 0x1A, 0x30));
+                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0x50, 0x19, 0x23, 0x40));
+                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0x28, 0x12, 0x1A, 0x30));
+                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0x40, 0x45, 0x5C, 0xA0));
+                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x80, 0x5E, 0x7B, 0xD0));
 
                 res["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0xF8, 0xFA, 0xFD));
                 res["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xC0));
@@ -53,24 +54,25 @@ namespace Vortex.Core.SystemIntegration
             }
             else
             {
-                // Vortex Light: Soft Arctic Azure & Lavender Mist + Frosted Pearl
-                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0xF4, 0xF6, 0xFC));
+                // Vortex Light: Soft Arctic Azure & Lavender Mist + Translucent Pearl
+                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0xEE, 0xF2, 0xFB));
 
                 var lightAtmosphere = new LinearGradientBrush
                 {
                     StartPoint = new Point(0.5, 0),
                     EndPoint = new Point(0.5, 1)
                 };
-                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xE6, 0xED, 0xFE), 0.0));
-                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xEC, 0xE7, 0xFD), 0.40));
-                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xF8, 0xFA, 0xFD), 1.0));
+                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xE2, 0xEB, 0xFE), 0.0));
+                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xEC, 0xE7, 0xFE), 0.40));
+                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xF5, 0xF7, 0xFD), 1.0));
                 res["AtmosphericGradient"] = lightAtmosphere;
 
-                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0xF5, 0xFF, 0xFF, 0xFF));
-                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
-                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0xEB, 0xF0, 0xFA, 0xFF));
-                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0xD2, 0xDC, 0xF5));
-                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0xAA, 0xBE, 0xF0));
+                // Translucent floating pearl cards
+                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0x60, 0xFF, 0xFF, 0xFF));
+                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF));
+                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0x40, 0xF0, 0xF4, 0xFC));
+                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0x80, 0xD0, 0xDA, 0xF5));
+                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0xB0, 0xB0, 0xC4, 0xF5));
 
                 res["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0x0C, 0x13, 0x26));
                 res["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(0x3B, 0x4A, 0x6B));

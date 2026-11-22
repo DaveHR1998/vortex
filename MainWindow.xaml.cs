@@ -429,8 +429,9 @@ namespace Vortex
         {
             _themeService.ToggleTheme();
             UpdateDwmBackdrop(_themeService.IsDarkMode);
-            BtnToggleTheme.Content = _themeService.IsDarkMode ? "🌙 Dark" : "☀️ Light";
-            TxtStatusBar.Text = $"Theme switched to {(_themeService.IsDarkMode ? "Proton Dark" : "Fluent Light")}.";
+            BtnToggleTheme.Content = _themeService.IsDarkMode ? "🌙" : "☀️";
+            BtnToggleTheme.ToolTip = _themeService.IsDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode";
+            TxtStatusBar.Text = $"Theme switched to {(_themeService.IsDarkMode ? "Vortex Dark" : "Vortex Light")}.";
         }
 
         private void UpdateHeaderTelemetry()
@@ -679,7 +680,8 @@ namespace Vortex
             else
             {
                 _orbWindow.Hide();
-                BtnToggleOrb.Content = "🔮 Show Desktop Orb";
+                BtnToggleOrb.Content = "🔮";
+                BtnToggleOrb.ToolTip = "Show Desktop Floating Orb";
             }
         }
 
@@ -695,7 +697,8 @@ namespace Vortex
                 });
             }
             _orbWindow.Show();
-            BtnToggleOrb.Content = "🔮 Hide Desktop Orb";
+            BtnToggleOrb.Content = "🔮";
+            BtnToggleOrb.ToolTip = "Hide Desktop Floating Orb";
         }
         #endregion
 

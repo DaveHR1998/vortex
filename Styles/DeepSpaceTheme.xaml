@@ -1,21 +1,21 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Atmospheric Gradient (Vortex Cyber Blue & Violet Aurora into Obsidian Space) -->
+    <!-- Atmospheric Gradient (Lighter Cosmic Violet & Electric Azure Aurora) -->
     <LinearGradientBrush x:Key="AtmosphericGradient" StartPoint="0.5,0" EndPoint="0.5,1">
-        <GradientStop Color="#1C1335" Offset="0.0" />
-        <GradientStop Color="#101C38" Offset="0.30" />
-        <GradientStop Color="#0A0F1F" Offset="0.70" />
-        <GradientStop Color="#070A12" Offset="1.0" />
+        <GradientStop Color="#261B46" Offset="0.0" />
+        <GradientStop Color="#18264D" Offset="0.30" />
+        <GradientStop Color="#12182E" Offset="0.70" />
+        <GradientStop Color="#0F1424" Offset="1.0" />
     </LinearGradientBrush>
 
-    <!-- Base Theme Brushes (Vortex Cyber Violet & Electric Azure) -->
-    <SolidColorBrush x:Key="CanvasBgBrush" Color="#070A12" />
-    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#EE0F1424" />
-    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#F2161C30" />
-    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#B0111628" />
-    <SolidColorBrush x:Key="BorderBrush" Color="#452C3860" />
-    <SolidColorBrush x:Key="BorderHoverBrush" Color="#85455CA0" />
+    <!-- Base Theme Brushes (Translucent Frosted Floating Glass Panels) -->
+    <SolidColorBrush x:Key="CanvasBgBrush" Color="#0F1424" />
+    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#40121A30" />
+    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#50192340" />
+    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#28121A30" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#40455CA0" />
+    <SolidColorBrush x:Key="BorderHoverBrush" Color="#805E7BD0" />
     <SolidColorBrush x:Key="AccentPrimaryBrush" Color="#6D4AFF" />
     <SolidColorBrush x:Key="AccentGlowBrush" Color="#00A3FF" />
     <SolidColorBrush x:Key="StatusSafeBrush" Color="#00D2FF" />
@@ -31,8 +31,8 @@
     <SolidColorBrush x:Key="ScrollBarThumbDragBrush" Color="#00A3FF" />
 
     <!-- Legacy / Installer Aliases -->
-    <SolidColorBrush x:Key="BgCardBrush" Color="#EE0F1424" />
-    <SolidColorBrush x:Key="BorderDarkBrush" Color="#452C3860" />
+    <SolidColorBrush x:Key="BgCardBrush" Color="#40121A30" />
+    <SolidColorBrush x:Key="BorderDarkBrush" Color="#40455CA0" />
     <SolidColorBrush x:Key="AccentCyanBrush" Color="#00A3FF" />
 
     <!-- Typography Styles -->
