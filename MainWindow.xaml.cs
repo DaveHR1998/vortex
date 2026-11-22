@@ -4554,7 +4554,7 @@ namespace Vortex
                 var diag = new
                 {
                     Application = "Vortex Guardian & System Engine",
-                    Version = "2.4.0",
+                    Version = "2.0.0",
                     ExportTimestampUtc = DateTime.UtcNow,
                     MachineName = Environment.MachineName,
                     OSVersion = Environment.OSVersion.VersionString,

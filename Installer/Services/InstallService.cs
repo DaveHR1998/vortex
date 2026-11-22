@@ -260,7 +260,7 @@ namespace VortexInstaller.Services
                 if (unKey != null)
                 {
                     unKey.SetValue("DisplayName", "Vortex System Guardian");
-                    unKey.SetValue("DisplayVersion", "1.0.0");
+                    unKey.SetValue("DisplayVersion", "2.0.0");
                     unKey.SetValue("Publisher", "Vortex Technologies");
                     unKey.SetValue("DisplayIcon", $"{exePath},0");
                     unKey.SetValue("InstallLocation", installDir);
@@ -281,7 +281,7 @@ namespace VortexInstaller.Services
                 if (unKey != null)
                 {
                     unKey.SetValue("DisplayName", "Vortex System Guardian");
-                    unKey.SetValue("DisplayVersion", "1.0.0");
+                    unKey.SetValue("DisplayVersion", "2.0.0");
                     unKey.SetValue("Publisher", "Vortex Technologies");
                     unKey.SetValue("DisplayIcon", $"{exePath},0");
                     unKey.SetValue("InstallLocation", installDir);
