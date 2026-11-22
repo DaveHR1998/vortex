@@ -48,7 +48,7 @@
                     <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="3,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="🧠 RAM: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
-                            <TextBlock x:Name="TxtHeaderRam" Text="76% (12.2 GB)" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" FontSize="10.5" />
+                            <TextBlock x:Name="TxtHeaderRam" Text="76% (12.2 GB)" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" FontSize="10.5" />
                         </StackPanel>
                     </Border>
 
@@ -56,7 +56,7 @@
                     <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="3,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="⚡ CPU: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
-                            <TextBlock x:Name="TxtHeaderCpu" Text="12%" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" FontSize="10.5" />
+                            <TextBlock x:Name="TxtHeaderCpu" Text="12%" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" FontSize="10.5" />
                         </StackPanel>
                     </Border>
 
@@ -88,8 +88,8 @@
         <!-- 2. Main Body: Floating Inset Panels (Sidebar + Content Card) -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <!-- Floating Sidebar Navigation -->
-                <ColumnDefinition Width="215" />
+                <!-- Floating Sidebar Navigation (Widened to prevent label clipping) -->
+                <ColumnDefinition Width="248" />
                 <!-- Floating Dynamic Content Card -->
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -101,14 +101,14 @@
                     <Border DockPanel.Dock="Top" Margin="12,12,12,8">
                         <Grid>
                             <TextBox x:Name="TxtSearchBox" Style="{StaticResource FluentSearchBox}"
-                                     Padding="10,6,32,6"
+                                     Padding="10,6,48,6"
                                      TextChanged="OnSearchTextChanged"
                                      PreviewKeyDown="OnSearchBoxPreviewKeyDown" />
                             <TextBlock x:Name="TxtSearchBoxPlaceholder" Text="Quick launcher (Ctrl+K)..."
                                        Foreground="{DynamicResource TextMutedBrush}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"
                                        IsHitTestVisible="False" FontSize="11" />
-                            <TextBlock Text="⌘K" Foreground="{DynamicResource TextMutedBrush}" 
+                            <TextBlock Text="Ctrl+K" Foreground="{DynamicResource TextMutedBrush}" 
                                        HorizontalAlignment="Right" VerticalAlignment="Center" 
                                        Margin="0,0,8,0" IsHitTestVisible="False" FontSize="10" />
 
@@ -304,115 +304,59 @@
                 <!-- TAB 0: Hero Overview Dashboard -->
                 <ScrollViewer x:Name="PanelHome" Visibility="Visible" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="0,0,6,12">
-                        <!-- Proton Style Hero Banner -->
-                        <Border CornerRadius="12" Padding="16,12" Margin="0,0,0,10"
+                        <!-- Unified Command Center & Health Header Card (Merged Proton Style) -->
+                        <Border CornerRadius="12" Padding="18,14" Margin="0,0,0,10"
                                 Background="{DynamicResource SurfaceRaisedBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
-                                <DockPanel Grid.Column="0" VerticalAlignment="Center">
-                                    <Image DockPanel.Dock="Left" Source="/vortex.png" Width="58" Height="58" Margin="0,0,16,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality">
-                                        <Image.Effect>
-                                            <DropShadowEffect Color="#6D4AFF" BlurRadius="20" ShadowDepth="0" Opacity="0.6" />
-                                        </Image.Effect>
-                                    </Image>
-                                    <StackPanel VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                            <Border Background="{DynamicResource AccentGlowBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
-                                                <TextBlock Text="⚡ GUARDIAN INTELLIGENCE" Foreground="#000000" FontWeight="Bold" FontSize="9.5" />
-                                            </Border>
-                                            <TextBlock Text="Active System Health &amp; Security" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                        <TextBlock Text="Vortex System Guardian" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="20" FontWeight="Bold" Margin="0,0,0,4" />
-                                        <TextBlock Text="Autonomous resource optimization, security posture evaluation, encrypted vault protection, and zero-telemetry defense." 
-                                                   Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11.5" MaxWidth="520" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </DockPanel>
-
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" MinWidth="180">
-                                    <Button Style="{StaticResource VortexPrimaryButton}" Content="🩺 1-Click Health Audit" Click="OnSystemHealthAuditClick" FontSize="12" Padding="14,6" Margin="0,0,0,6" />
-                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="⚡ Instant Turbo Boost" Click="OnTurboBoostClick" FontSize="11.5" Padding="12,5" Margin="0,0,0,6" />
-                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Deep Scan Junk" Click="OnScanJunkClick" HorizontalAlignment="Stretch" Padding="12,5" FontSize="11.5" />
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-
-                        <!-- System Health Index Banner -->
-                        <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,0,10">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Circular/Badge Health Score -->
-                                <Border Grid.Column="0" Width="72" Height="72" CornerRadius="36"
-                                        Background="{DynamicResource SurfaceRaisedBrush}"
+                                <!-- 1. Unified 100% Health Ring -->
+                                <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32"
+                                        Background="{DynamicResource SurfaceDarkBrush}"
                                         BorderBrush="{DynamicResource AccentGlowBrush}" BorderThickness="2.5"
                                         Margin="0,0,16,0" VerticalAlignment="Center">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock x:Name="TxtHealthScoreValue" Text="96%" Foreground="{DynamicResource AccentGlowBrush}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
-                                        <TextBlock Text="HEALTH" Foreground="{DynamicResource TextMutedBrush}" FontSize="8" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,-2,0,0" />
+                                        <TextBlock x:Name="TxtHealthScoreValue" Text="100%" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" />
+                                        <TextBlock Text="HEALTH" Foreground="{DynamicResource TextMutedBrush}" FontSize="7.5" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,-2,0,0" />
                                     </StackPanel>
                                 </Border>
 
+                                <!-- 2. Flush-Left Title & Status Description -->
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                        <TextBlock x:Name="TxtHealthScoreVerdict" Text="SYSTEM OPTIMAL &amp; PROTECTED" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" FontSize="13.5" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                        <TextBlock x:Name="TxtHealthScoreVerdict" Text="SYSTEM OPTIMAL &amp; PROTECTED" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center" />
                                         <TextBlock x:Name="TxtHealthAuditTimestamp" Text=" • Live Telemetry Active" Foreground="{DynamicResource TextMutedBrush}" FontSize="10.5" VerticalAlignment="Center" />
                                     </StackPanel>
-                                    <TextBlock Text="Composite index evaluated across memory pressure, disk headroom, kernel security, and telemetry isolation." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" Margin="0,0,0,8" />
+                                    <TextBlock Text="Vortex System Guardian" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" FontWeight="Bold" Margin="0,0,0,2" />
+                                    <TextBlock Text="Autonomous resource optimization, zero-trust vault encryption, and telemetry defense." 
+                                               Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
 
-                                    <!-- 4 Micro-Pillars -->
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <!-- Pillar 1: Resources -->
-                                        <Border Grid.Column="0" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="6" Padding="8,5" Margin="0,0,4,0">
-                                            <StackPanel>
-                                                <TextBlock Text="🧠 RESOURCES" Foreground="{DynamicResource TextMutedBrush}" FontSize="8.5" FontWeight="Bold" />
-                                                <TextBlock x:Name="TxtHealthRamSummary" Text="Optimal (RAM / CPU)" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
-                                        </Border>
+                                    <!-- Compact 4-Pillar Status Line -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <TextBlock x:Name="TxtHealthRamSummary" Text="🧠 Optimal" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,0,10,0" />
+                                        <TextBlock x:Name="TxtHealthDiskSummary" Text="💽 Healthy" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,0,10,0" />
+                                        <TextBlock x:Name="TxtHealthSecuritySummary" Text="🛡️ Safe" Foreground="{DynamicResource StatusSafeBrush}" FontSize="10" Margin="0,0,10,0" />
+                                        <TextBlock x:Name="TxtHealthPrivacySummary" Text="👁️ Zero-Telemetry" Foreground="{DynamicResource StatusSafeBrush}" FontSize="10" />
+                                    </StackPanel>
+                                </StackPanel>
 
-                                        <!-- Pillar 2: Storage -->
-                                        <Border Grid.Column="1" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="6" Padding="8,5" Margin="2,0,2,0">
-                                            <StackPanel>
-                                                <TextBlock Text="💽 STORAGE" Foreground="{DynamicResource TextMutedBrush}" FontSize="8.5" FontWeight="Bold" />
-                                                <TextBlock x:Name="TxtHealthDiskSummary" Text="Healthy (Drive C:)" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
-                                        </Border>
-
-                                        <!-- Pillar 3: Security -->
-                                        <Border Grid.Column="2" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="6" Padding="8,5" Margin="2,0,2,0">
-                                            <StackPanel>
-                                                <TextBlock Text="🛡️ SECURITY" Foreground="{DynamicResource TextMutedBrush}" FontSize="8.5" FontWeight="Bold" />
-                                                <TextBlock x:Name="TxtHealthSecuritySummary" Text="Protected (System32)" Foreground="{DynamicResource StatusSafeBrush}" FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
-                                        </Border>
-
-                                        <!-- Pillar 4: Privacy -->
-                                        <Border Grid.Column="3" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="6" Padding="8,5" Margin="4,0,0,0">
-                                            <StackPanel>
-                                                <TextBlock Text="👁️ PRIVACY" Foreground="{DynamicResource TextMutedBrush}" FontSize="8.5" FontWeight="Bold" />
-                                                <TextBlock x:Name="TxtHealthPrivacySummary" Text="Zero Telemetry" Foreground="{DynamicResource StatusSafeBrush}" FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
-                                        </Border>
-                                    </Grid>
+                                <!-- 3. Primary CTA & Inline Secondary Actions -->
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource VortexPrimaryButton}" Content="⚡ 1-Click Health Audit" Click="OnSystemHealthAuditClick" FontSize="11.5" Padding="14,6" Margin="0,0,0,6" ToolTip="Evaluate composite health index across memory, storage, and telemetry" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="⚡ Turbo Boost" Click="OnTurboBoostClick" FontSize="10.5" Padding="8,4" Margin="0,0,6,0" ToolTip="Flush memory working sets" />
+                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="🧹 Scan Junk" Click="OnScanJunkClick" FontSize="10.5" Padding="8,4" ToolTip="Scan system junk &amp; temporary files" />
+                                    </StackPanel>
                                 </StackPanel>
                             </Grid>
                         </Border>
 
-                        <!-- Fast Action Cards Grid -->
+                        <!-- Fast Action Feature Cards Grid (Unified Cohesive Icons) -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -421,103 +365,103 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- Card 1: Memory & Processes -->
-                            <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="OnCardProcessesClick">
+                            <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,6,0" Cursor="Hand" MouseLeftButtonUp="OnCardProcessesClick">
                                 <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource AccentPrimaryBrush}" Margin="0,0,10,0">
-                                            <TextBlock Text="⚡" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                                            <TextBlock Text="⚡" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
                                         <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="Process Intelligence" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                                            <TextBlock x:Name="TxtCardProcessesSub" Text="Active Tasks &amp; RAM" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" />
+                                            <TextBlock Text="Process Intelligence" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" />
+                                            <TextBlock x:Name="TxtCardProcessesSub" Text="Active Tasks &amp; RAM" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" />
                                         </StackPanel>
                                     </StackPanel>
-                                    <TextBlock Text="Identify memory hogs, dev daemons, and trim working sets safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                                    <TextBlock Text="Identify memory hogs, dev daemons, and trim working sets safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
                             <!-- Card 2: Folder Provenance -->
-                            <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="4,0,4,0" Cursor="Hand" MouseLeftButtonUp="OnCardStorageClick">
+                            <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="3,0,3,0" Cursor="Hand" MouseLeftButtonUp="OnCardStorageClick">
                                 <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <Border Width="30" Height="30" CornerRadius="6" Background="#0284C7" Margin="0,0,10,0">
-                                            <TextBlock Text="📁" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                                            <TextBlock Text="📁" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
                                         <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="Folder Ownership" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                                            <TextBlock x:Name="TxtCardStorageSub" Text="Drive C: Capacity" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" />
+                                            <TextBlock Text="Folder Ownership" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" />
+                                            <TextBlock x:Name="TxtCardStorageSub" Text="Drive C: Capacity" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" />
                                         </StackPanel>
                                     </StackPanel>
-                                    <TextBlock Text="Correlate mystery AppData folders to their installed apps and publishers." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                                    <TextBlock Text="Correlate mystery AppData folders to their installed apps and publishers." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
                             <!-- Card 3: Safe Sweeper -->
-                            <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="8,0,0,0" Cursor="Hand" MouseLeftButtonUp="OnCardJunkClick">
+                            <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="6,0,0,0" Cursor="Hand" MouseLeftButtonUp="OnCardJunkClick">
                                 <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource StatusSafeBrush}" Margin="0,0,10,0">
-                                            <TextBlock Text="🧹" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
+                                            <TextBlock Text="🧹" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
                                         <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="System Sweeper" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                                            <TextBlock x:Name="TxtCardJunkSub" Text="Restore Point Protected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" />
+                                            <TextBlock Text="System Sweeper" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" />
+                                            <TextBlock x:Name="TxtCardJunkSub" Text="Restore Point Protected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" />
                                         </StackPanel>
                                     </StackPanel>
-                                    <TextBlock Text="Clean Windows temp, browser caches, and prefetch safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                                    <TextBlock Text="Clean Windows temp, browser caches, and prefetch safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
                         </Grid>
 
                         <!-- Quick Telemetry & Health Panel -->
-                        <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18">
+                        <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="1.1*" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
-                                <!-- 4 Live Hardware Gauges -->
+                                <!-- Live Resource Telemetry & Utilization -->
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="LIVE HARDWARE GAUGES &amp; TELEMETRY" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />
+                                    <TextBlock Text="LIVE RESOURCE TELEMETRY &amp; UTILIZATION" Foreground="{DynamicResource TextMutedBrush}" FontSize="9.5" FontWeight="Bold" Margin="0,0,0,10" />
 
                                     <!-- CPU Activity -->
-                                    <Grid Margin="0,0,0,8">
+                                    <Grid Margin="0,0,0,6">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="⚡ CPU Load:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                                             <TextBlock x:Name="TxtOverviewCpuDetails" Text=" (Active)" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="4,1,0,0" />
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewCpuLoad" Text="12%" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewCpu" Value="12" Maximum="100" Height="5" Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource StatusSafeBrush}" Margin="0,0,0,12" />
+                                    <ProgressBar x:Name="PbOverviewCpu" Value="12" Maximum="100" Height="7" Background="#25324E" Foreground="{DynamicResource StatusSafeBrush}" Margin="0,0,0,10" />
 
                                     <!-- Memory Load -->
-                                    <Grid Margin="0,0,0,8">
+                                    <Grid Margin="0,0,0,6">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="🧠 Physical Memory:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                                             <TextBlock x:Name="TxtOverviewRamDetails" Text="" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="4,1,0,0" />
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewRamLoad" Text="48% (7.6 / 16 GB)" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="5" Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,12" />
+                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="7" Background="#25324E" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
 
                                     <!-- Primary Drive (C:) -->
-                                    <Grid Margin="0,0,0,8">
+                                    <Grid Margin="0,0,0,6">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="💽 System Drive (C:):" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                                             <TextBlock x:Name="TxtOverviewDiskDetails" Text="" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="4,1,0,0" />
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewDiskLoad" Text="45% Used" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewDisk" Value="45" Maximum="100" Height="5" Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,12" />
+                                    <ProgressBar x:Name="PbOverviewDisk" Value="45" Maximum="100" Height="7" Background="#25324E" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
 
                                     <!-- System Uptime & Power Scheme -->
                                     <Grid Margin="0,2,0,0">
-                                        <TextBlock Text="⏱️ System Uptime:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
-                                        <TextBlock x:Name="TxtOverviewUptime" Text="Calculating..." Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" HorizontalAlignment="Right" FontSize="11" />
+                                        <TextBlock Text="⏱️ System Uptime:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
+                                        <TextBlock x:Name="TxtOverviewUptime" Text="Calculating..." Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" HorizontalAlignment="Right" FontSize="10.5" />
                                     </Grid>
                                     <Grid Margin="0,4,0,0">
-                                        <TextBlock Text="🔋 Power Scheme:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
+                                        <TextBlock Text="🔋 Power Scheme:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
                                         <TextBlock x:Name="TxtOverviewPower" Text="Balanced (AC Power)" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" FontSize="10" />
                                     </Grid>
                                 </StackPanel>

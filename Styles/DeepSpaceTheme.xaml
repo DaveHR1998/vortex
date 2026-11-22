@@ -156,23 +156,23 @@
         </Setter>
     </Style>
 
-    <!-- Custom Fluent ProgressBar -->
+    <!-- Custom Fluent ProgressBar (Brightened High-Contrast Track) -->
     <Style TargetType="ProgressBar">
-        <Setter Property="Height" Value="6" />
-        <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}" />
+        <Setter Property="Height" Value="7" />
+        <Setter Property="Background" Value="#25324E" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentGlowBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
                     <Grid>
-                        <Border Background="{TemplateBinding Background}" CornerRadius="3" />
+                        <Border Background="{TemplateBinding Background}" CornerRadius="3.5" />
                         <Track x:Name="PART_Track">
                             <Track.DecreaseRepeatButton>
                                 <RepeatButton>
                                     <RepeatButton.Template>
                                         <ControlTemplate TargetType="RepeatButton">
-                                            <Border Background="{TemplateBinding Foreground}" CornerRadius="3" />
+                                            <Border Background="{TemplateBinding Foreground}" CornerRadius="3.5" />
                                         </ControlTemplate>
                                     </RepeatButton.Template>
                                 </RepeatButton>
@@ -447,7 +447,7 @@
         <Setter Property="FontSize" Value="12.5" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Height" Value="36" />
-        <Setter Property="Margin" Value="4,1" />
+        <Setter Property="Margin" Value="2,1" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
@@ -456,7 +456,7 @@
                     <Border x:Name="NavBorder"
                             Background="{TemplateBinding Background}"
                             CornerRadius="8"
-                            Padding="8,0">
+                            Padding="6,0">
                         <Grid VerticalAlignment="Center">
                             <Border x:Name="ActiveIndicator"
                                     Width="3.5" Height="18"
@@ -465,7 +465,7 @@
                                     CornerRadius="2"
                                     Visibility="Collapsed" />
                             
-                            <ContentPresenter Margin="10,0,0,0"
+                            <ContentPresenter Margin="8,0,0,0"
                                               VerticalAlignment="Center"
                                               HorizontalAlignment="Left" />
                         </Grid>
