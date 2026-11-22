@@ -42,8 +42,8 @@
                     <TextBlock x:Name="TxtBreadcrumb" Visibility="Collapsed" />
                 </StackPanel>
 
-                <!-- Hardware Telemetry Header Pills (Adaptive Compact) -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Hardware Telemetry Header Pills (Perfect Window-Centered Layout) -->
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="4" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True">
                     <!-- RAM Pill -->
                     <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="3,0">
                         <StackPanel Orientation="Horizontal">
