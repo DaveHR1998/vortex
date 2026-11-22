@@ -103,7 +103,7 @@ namespace Vortex.Setup
         {
             this.SuspendLayout();
 
-            this.ClientSize = new Size(620, 466);
+            this.ClientSize = new Size(620, 546);
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.FromArgb(22, 22, 29); // Deep space canvas #16161D
@@ -134,8 +134,9 @@ namespace Vortex.Setup
                     e.Graphics.DrawLine(linePen, 0, topBar.Height - 1, topBar.Width, topBar.Height - 1);
                 }
 
-                // Verified Publisher Badge rendered directly as a crisp rounded pill
-                Rectangle badgeRect = new Rectangle(236, 11, 142, 24);
+                // Verified Publisher Badge placed cleanly on right side before close button with zero title collision
+                int badgeX = topBar.Width - 46 - 152;
+                Rectangle badgeRect = new Rectangle(badgeX, 11, 144, 24);
                 using (GraphicsPath bp = SetupGraphicsHelper.CreateRoundedRectangle(badgeRect, 6))
                 {
                     using (SolidBrush bBg = new SolidBrush(Color.FromArgb(24, 44, 37)))
@@ -157,7 +158,7 @@ namespace Vortex.Setup
             topBar.MouseMove += delegate(object s, MouseEventArgs e) { if (_dragging) { Point diff = new Point(e.X - _dragStart.X, e.Y - _dragStart.Y); this.Location = new Point(this.Location.X + diff.X, this.Location.Y + diff.Y); } };
             topBar.MouseUp += delegate(object s, MouseEventArgs e) { _dragging = false; };
 
-            // Title Logo + Name
+            // Title Logo + Name (Allocated generous width up to badge)
             Label topBrand = new Label
             {
                 Text = "⚡ VORTEX SYSTEM GUARDIAN",
@@ -193,17 +194,74 @@ namespace Vortex.Setup
             // ==================== PANEL 0: OPTIONS CARD ====================
             _optionsCard = new ModernCardPanel
             {
-                Location = new Point(32, 146),
-                Size = new Size(556, 218)
+                Location = new Point(32, 156),
+                Size = new Size(556, 314)
+            };
+
+            // Paint included capabilities badge showcase inside options card
+            _optionsCard.Paint += delegate(object s, PaintEventArgs e)
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+                // Feature grid title
+                using (Font capTitleFont = new Font("Segoe UI", 8.25f, FontStyle.Bold))
+                {
+                    TextRenderer.DrawText(e.Graphics, "INCLUDED SYSTEM CAPABILITIES & MODULES", capTitleFont,
+                        new Point(18, 12), Color.FromArgb(159, 160, 195),
+                        TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine);
+                }
+
+                // 6 Core Features rendered as modern rounded pills
+                string[] features = new string[]
+                {
+                    "🔒 AES-256 Vault",
+                    "⚡ RAM Optimizer",
+                    "🛡️ Telemetry Shield",
+                    "🌐 Socket Firewall",
+                    "🧹 Residual Cleaner",
+                    "🛑 USB DLP Guard"
+                };
+
+                using (Font pillFont = new Font("Segoe UI", 8f, FontStyle.Bold))
+                using (SolidBrush pillBg = new SolidBrush(Color.FromArgb(28, 29, 44)))
+                using (Pen pillPen = new Pen(Color.FromArgb(62, 64, 94), 1f))
+                {
+                    int colW = 168;
+                    int rowH = 24;
+                    for (int i = 0; i < features.Length; i++)
+                    {
+                        int col = i % 3;
+                        int row = i / 3;
+                        int x = 18 + col * (colW + 8);
+                        int y = 32 + row * (rowH + 6);
+                        Rectangle pRect = new Rectangle(x, y, colW, rowH);
+
+                        using (GraphicsPath pp = SetupGraphicsHelper.CreateRoundedRectangle(pRect, 5))
+                        {
+                            e.Graphics.FillPath(pillBg, pp);
+                            e.Graphics.DrawPath(pillPen, pp);
+                        }
+                        TextRenderer.DrawText(e.Graphics, features[i], pillFont, pRect, Color.FromArgb(210, 212, 235),
+                            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+                    }
+                }
+
+                // Divider line 1
+                using (Pen sepPen = new Pen(Color.FromArgb(56, 108, 109, 147), 1))
+                {
+                    e.Graphics.DrawLine(sepPen, 18, 96, _optionsCard.Width - 18, 96);
+                    e.Graphics.DrawLine(sepPen, 18, 184, _optionsCard.Width - 18, 184);
+                }
             };
 
             Label lblDest = new Label
             {
                 Text = "INSTALLATION LOCATION",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.25f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(159, 160, 195),
                 BackColor = Color.FromArgb(37, 37, 55),
-                Location = new Point(18, 16),
+                Location = new Point(18, 108),
                 AutoSize = true,
                 UseMnemonic = false
             };
@@ -211,7 +269,7 @@ namespace Vortex.Setup
 
             Panel txtContainer = new Panel
             {
-                Location = new Point(18, 38),
+                Location = new Point(18, 130),
                 Size = new Size(414, 34),
                 BackColor = Color.FromArgb(22, 22, 29)
             };
@@ -240,7 +298,7 @@ namespace Vortex.Setup
             {
                 Text = "Browse...",
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Location = new Point(442, 38),
+                Location = new Point(442, 130),
                 Size = new Size(96, 34)
             };
             _btnBrowse.Click += delegate(object s, EventArgs e)
@@ -262,23 +320,14 @@ namespace Vortex.Setup
             };
             _optionsCard.Controls.Add(_btnBrowse);
 
-            // Separation Line
-            Panel sepLine = new Panel
-            {
-                Location = new Point(18, 86),
-                Size = new Size(520, 1),
-                BackColor = Color.FromArgb(56, 108, 109, 147)
-            };
-            _optionsCard.Controls.Add(sepLine);
-
             _chkDesktop = new CheckBox
             {
                 Text = "Create Desktop Shortcut (with Vortex Icon)",
                 Checked = true,
                 ForeColor = Color.FromArgb(227, 227, 232),
-                Font = new Font("Segoe UI", 9.5f),
+                Font = new Font("Segoe UI", 9.25f),
                 BackColor = Color.FromArgb(37, 37, 55),
-                Location = new Point(18, 98),
+                Location = new Point(18, 196),
                 Size = new Size(480, 24),
                 UseMnemonic = false
             };
@@ -289,9 +338,9 @@ namespace Vortex.Setup
                 Text = "Create Start Menu Folder & Shortcuts",
                 Checked = true,
                 ForeColor = Color.FromArgb(227, 227, 232),
-                Font = new Font("Segoe UI", 9.5f),
+                Font = new Font("Segoe UI", 9.25f),
                 BackColor = Color.FromArgb(37, 37, 55),
-                Location = new Point(18, 130),
+                Location = new Point(18, 226),
                 Size = new Size(480, 24),
                 UseMnemonic = false
             };
@@ -302,9 +351,9 @@ namespace Vortex.Setup
                 Text = "Launch Vortex Guardian immediately after installation",
                 Checked = true,
                 ForeColor = Color.FromArgb(227, 227, 232),
-                Font = new Font("Segoe UI", 9.5f),
+                Font = new Font("Segoe UI", 9.25f),
                 BackColor = Color.FromArgb(37, 37, 55),
-                Location = new Point(18, 162),
+                Location = new Point(18, 256),
                 Size = new Size(480, 24),
                 UseMnemonic = false
             };
@@ -315,8 +364,8 @@ namespace Vortex.Setup
             // ==================== PANEL 1: INSTALLING ====================
             _installPanel = new Panel
             {
-                Location = new Point(32, 160),
-                Size = new Size(556, 210),
+                Location = new Point(32, 170),
+                Size = new Size(556, 250),
                 BackColor = Color.FromArgb(22, 22, 29),
                 Visible = false
             };
@@ -327,7 +376,7 @@ namespace Vortex.Setup
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(227, 227, 232),
                 BackColor = Color.FromArgb(22, 22, 29),
-                Location = new Point(0, 16),
+                Location = new Point(0, 24),
                 Size = new Size(556, 30),
                 UseMnemonic = false
             };
@@ -335,7 +384,7 @@ namespace Vortex.Setup
 
             _progressBar = new ModernProgressBar
             {
-                Location = new Point(0, 60),
+                Location = new Point(0, 72),
                 Size = new Size(556, 12),
                 Value = 0
             };
@@ -347,7 +396,7 @@ namespace Vortex.Setup
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(129, 140, 248),
                 BackColor = Color.FromArgb(22, 22, 29),
-                Location = new Point(0, 80),
+                Location = new Point(0, 94),
                 Size = new Size(556, 26),
                 TextAlign = ContentAlignment.MiddleRight,
                 UseMnemonic = false
@@ -356,11 +405,11 @@ namespace Vortex.Setup
 
             _lblInstallDetail = new Label
             {
-                Text = "Configuring application binaries, system shields, and security modules...",
+                Text = "Configuring application binaries, zero-trust engines, and security shields...",
                 Font = new Font("Segoe UI", 9.5f),
                 ForeColor = Color.FromArgb(159, 160, 195),
                 BackColor = Color.FromArgb(22, 22, 29),
-                Location = new Point(0, 116),
+                Location = new Point(0, 134),
                 Size = new Size(556, 40),
                 UseMnemonic = false
             };
@@ -371,8 +420,8 @@ namespace Vortex.Setup
             // ==================== PANEL 2: FINISHED ====================
             _finishedPanel = new Panel
             {
-                Location = new Point(32, 140),
-                Size = new Size(556, 230),
+                Location = new Point(32, 150),
+                Size = new Size(556, 280),
                 BackColor = Color.FromArgb(22, 22, 29),
                 Visible = false
             };
@@ -380,7 +429,7 @@ namespace Vortex.Setup
             _picSuccess = new PictureBox
             {
                 Size = new Size(68, 68),
-                Location = new Point(244, 4),
+                Location = new Point(244, 12),
                 BackColor = Color.FromArgb(22, 22, 29)
             };
             _picSuccess.Paint += delegate(object s, PaintEventArgs e)
@@ -405,7 +454,7 @@ namespace Vortex.Setup
                 Font = new Font("Segoe UI", 17f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(227, 227, 232),
                 BackColor = Color.FromArgb(22, 22, 29),
-                Location = new Point(0, 84),
+                Location = new Point(0, 96),
                 Size = new Size(556, 36),
                 TextAlign = ContentAlignment.MiddleCenter,
                 UseMnemonic = false
@@ -414,11 +463,11 @@ namespace Vortex.Setup
 
             _lblFinishedSubtitle = new Label
             {
-                Text = "Vortex System Guardian is successfully configured and ready to protect your PC.",
+                Text = "All security shields, vault encryption, and memory engines are active and ready.",
                 Font = new Font("Segoe UI", 10f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(159, 160, 195),
                 BackColor = Color.FromArgb(22, 22, 29),
-                Location = new Point(0, 122),
+                Location = new Point(0, 136),
                 Size = new Size(556, 26),
                 TextAlign = ContentAlignment.MiddleCenter,
                 UseMnemonic = false
@@ -432,7 +481,7 @@ namespace Vortex.Setup
                 ForeColor = Color.FromArgb(227, 227, 232),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 BackColor = Color.FromArgb(22, 22, 29),
-                Location = new Point(176, 160),
+                Location = new Point(176, 178),
                 Size = new Size(240, 30),
                 UseMnemonic = false
             };
@@ -445,7 +494,7 @@ namespace Vortex.Setup
             {
                 Text = "Cancel",
                 Size = new Size(110, 42),
-                Location = new Point(32, 392),
+                Location = new Point(32, 484),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold)
             };
             _btnCancel.Click += delegate(object s, EventArgs e) { Application.Exit(); };
@@ -455,7 +504,7 @@ namespace Vortex.Setup
             {
                 Text = "⚡ Install Vortex Now",
                 Size = new Size(190, 42),
-                Location = new Point(398, 392),
+                Location = new Point(398, 484),
                 IsPrimary = true,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold)
             };
@@ -466,7 +515,7 @@ namespace Vortex.Setup
             {
                 Text = "🚀 Launch Vortex",
                 Size = new Size(190, 42),
-                Location = new Point(398, 392),
+                Location = new Point(398, 484),
                 IsSuccess = true,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 Visible = false
@@ -818,7 +867,7 @@ namespace Vortex.Setup
                 using (Font tagFont = new Font("Segoe UI", 8.5f, FontStyle.Bold))
                 {
                     TextRenderer.DrawText(e.Graphics, "SYSTEM OPTIMIZER & ZERO-TRUST VAULT", tagFont,
-                        new Point(96, 58), Color.FromArgb(129, 140, 248),
+                        new Point(96, 56), Color.FromArgb(129, 140, 248),
                         TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine);
                 }
 
@@ -826,18 +875,20 @@ namespace Vortex.Setup
                 using (Font titleFont = new Font("Segoe UI", 16f, FontStyle.Bold))
                 {
                     TextRenderer.DrawText(e.Graphics, title, titleFont,
-                        new Point(94, 76), Color.FromArgb(227, 227, 232),
+                        new Point(94, 74), Color.FromArgb(227, 227, 232),
                         TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine);
                 }
 
+                // Subtitle rendered with WordBreak so no text is ever hidden or truncated
                 string subtitle = _step == 0
-                    ? "Autonomous RAM boost, process heuristics, zero-trust encryption & telemetry defense."
+                    ? "Autonomous RAM boost, AES-256 folder vault, 4-layer telemetry shield & network firewall."
                     : "Please wait while files, system shields, and security modules are configured.";
-                using (Font subFont = new Font("Segoe UI", 9.5f, FontStyle.Regular))
+                
+                Rectangle subRect = new Rectangle(96, 108, this.Width - 116, 42);
+                using (Font subFont = new Font("Segoe UI", 9.25f, FontStyle.Regular))
                 {
-                    TextRenderer.DrawText(e.Graphics, subtitle, subFont,
-                        new Point(96, 112), Color.FromArgb(159, 160, 195),
-                        TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine);
+                    TextRenderer.DrawText(e.Graphics, subtitle, subFont, subRect, Color.FromArgb(159, 160, 195),
+                        TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix);
                 }
             }
 
