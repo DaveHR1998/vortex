@@ -1,39 +1,39 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Atmospheric Gradient (Proton VPN Inspired Top Emerald-Teal Aurora into Deep Slate) -->
+    <!-- Atmospheric Gradient (Vortex Cyber Blue & Violet Aurora into Obsidian Space) -->
     <LinearGradientBrush x:Key="AtmosphericGradient" StartPoint="0.5,0" EndPoint="0.5,1">
-        <GradientStop Color="#0B3029" Offset="0.0" />
-        <GradientStop Color="#092420" Offset="0.30" />
-        <GradientStop Color="#081619" Offset="0.70" />
-        <GradientStop Color="#060C0E" Offset="1.0" />
+        <GradientStop Color="#1C1335" Offset="0.0" />
+        <GradientStop Color="#101C38" Offset="0.30" />
+        <GradientStop Color="#0A0F1F" Offset="0.70" />
+        <GradientStop Color="#070A12" Offset="1.0" />
     </LinearGradientBrush>
 
-    <!-- Base Theme Brushes (Default to Proton-Dark) -->
-    <SolidColorBrush x:Key="CanvasBgBrush" Color="#070E11" />
-    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#EE0E181C" />
-    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#F2142328" />
-    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#B00F1C20" />
-    <SolidColorBrush x:Key="BorderBrush" Color="#3D294E48" />
-    <SolidColorBrush x:Key="BorderHoverBrush" Color="#853D746B" />
+    <!-- Base Theme Brushes (Vortex Cyber Violet & Electric Azure) -->
+    <SolidColorBrush x:Key="CanvasBgBrush" Color="#070A12" />
+    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#EE0F1424" />
+    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#F2161C30" />
+    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#B0111628" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#452C3860" />
+    <SolidColorBrush x:Key="BorderHoverBrush" Color="#85455CA0" />
     <SolidColorBrush x:Key="AccentPrimaryBrush" Color="#6D4AFF" />
-    <SolidColorBrush x:Key="AccentGlowBrush" Color="#00E599" />
-    <SolidColorBrush x:Key="StatusSafeBrush" Color="#00E599" />
+    <SolidColorBrush x:Key="AccentGlowBrush" Color="#00A3FF" />
+    <SolidColorBrush x:Key="StatusSafeBrush" Color="#00D2FF" />
     <SolidColorBrush x:Key="StatusWarningBrush" Color="#F59E0B" />
     <SolidColorBrush x:Key="StatusDangerBrush" Color="#EF4444" />
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F4FAF8" />
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#8FA8A4" />
-    <SolidColorBrush x:Key="TextMutedBrush" Color="#51706B" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F8FAFD" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#94A3C0" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#586580" />
 
     <!-- Sleek ScrollBar Brushes -->
-    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#502A5750" />
-    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#903B786E" />
-    <SolidColorBrush x:Key="ScrollBarThumbDragBrush" Color="#00E599" />
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#50354675" />
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#904D65A8" />
+    <SolidColorBrush x:Key="ScrollBarThumbDragBrush" Color="#00A3FF" />
 
     <!-- Legacy / Installer Aliases -->
-    <SolidColorBrush x:Key="BgCardBrush" Color="#EE0E181C" />
-    <SolidColorBrush x:Key="BorderDarkBrush" Color="#3D294E48" />
-    <SolidColorBrush x:Key="AccentCyanBrush" Color="#00E599" />
+    <SolidColorBrush x:Key="BgCardBrush" Color="#EE0F1424" />
+    <SolidColorBrush x:Key="BorderDarkBrush" Color="#452C3860" />
+    <SolidColorBrush x:Key="AccentCyanBrush" Color="#00A3FF" />
 
     <!-- Typography Styles -->
     <Style x:Key="TitleHeaderStyle" TargetType="TextBlock">
