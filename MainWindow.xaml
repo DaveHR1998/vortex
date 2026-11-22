@@ -99,7 +99,7 @@
                     <Border DockPanel.Dock="Top" Margin="12,12,12,8">
                         <Grid>
                             <TextBox x:Name="TxtSearchBox" Style="{StaticResource FluentSearchBox}"
-                                     Padding="10,6,48,6"
+                                     Padding="10,0,48,0" Height="32"
                                      TextChanged="OnSearchTextChanged"
                                      PreviewKeyDown="OnSearchBoxPreviewKeyDown" />
                             <TextBlock x:Name="TxtSearchBoxPlaceholder" Text="Quick launcher (Ctrl+K)..."
@@ -581,7 +581,7 @@
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Grid Width="200" Margin="0,0,8,0">
                                 <TextBox x:Name="TxtProcessFilter" Style="{StaticResource FluentSearchBox}"
-                                         Padding="10,6,28,6" Height="32"
+                                         Padding="10,0,28,0" Height="32"
                                          TextChanged="OnProcessFilterInputChanged"
                                          ToolTip="Search processes by name, PID, or publisher" />
                                 <TextBlock x:Name="TxtProcessFilterPlaceholder" Text="Search processes..."
@@ -692,54 +692,60 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,12">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                        <!-- Title row -->
-                        <StackPanel Grid.Row="0">
+                        <!-- Title on Left -->
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
                             <TextBlock Text="Folder Ownership &amp; Storage" Style="{StaticResource TitleHeaderStyle}" />
                             <TextBlock Text="Inspect folder contents and safely clean leftover caches." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
                         </StackPanel>
 
-                        <!-- Button row — below the title so they never overlap -->
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <!-- Action Buttons on Right -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Style="{StaticResource VortexSecondaryButton}" Content="📂 Scan LocalAppData" Click="OnScanLocalAppDataClick" Height="34" Padding="14,0" Margin="0,0,8,0" ToolTip="Scan current user's %LocalAppData% directory" />
                             <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Deep Scan All Caches" Click="OnScanAllCachesClick" Height="34" Padding="14,0" Margin="0,0,8,0" ToolTip="Scan roaming and application cache directories" />
                             <Button x:Name="BtnCleanVerdict" Style="{StaticResource VortexDangerButton}" Content="🧹 Clean Filtered Leftovers" Click="OnCleanVerdictFilteredClick" Height="34" Padding="16,0" FontWeight="SemiBold" ToolTip="Clean safe folders matching the active verdict filter" />
                         </StackPanel>
                     </Grid>
 
-                    <!-- Verdict Filter Bar -->
-                    <Border Grid.Row="1" Margin="0,0,0,10">
-                        <DockPanel>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="Filter Verdict:" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="11" FontWeight="SemiBold" />
-                                <RadioButton x:Name="RbFilterFolderAll" GroupName="FolderVerdictFilterGroup" Content="All Folders" Style="{StaticResource VortexFilterChip}" IsChecked="True" Click="OnFolderFilterChanged" />
-                                <RadioButton x:Name="RbFilterFolderOrphaned" GroupName="FolderVerdictFilterGroup" Content="🟣 Orphaned (Safe)" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
-                                <RadioButton x:Name="RbFilterFolderSafeDelete" GroupName="FolderVerdictFilterGroup" Content="🟢 Safe to Delete" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
-                                <RadioButton x:Name="RbFilterFolderCache" GroupName="FolderVerdictFilterGroup" Content="🔵 Safe Caches" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
-                                <RadioButton x:Name="RbFilterFolderRunning" GroupName="FolderVerdictFilterGroup" Content="🔴 App Running" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" />
-                            </StackPanel>
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Grid Width="170" Margin="0,0,10,0">
-                                    <TextBox x:Name="TxtFolderSearch" Style="{StaticResource FluentSearchBox}"
-                                             Padding="10,4,26,4" Height="28"
-                                             TextChanged="OnFolderSearchChanged"
-                                             ToolTip="Search folders by name or path" />
-                                    <TextBlock x:Name="TxtFolderSearchPlaceholder" Text="Search folders..."
-                                               Foreground="{DynamicResource TextMutedBrush}"
-                                               VerticalAlignment="Center" Margin="10,0,0,0"
-                                               IsHitTestVisible="False" FontSize="11" />
-                                    <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
-                                               HorizontalAlignment="Right" VerticalAlignment="Center"
-                                               Margin="0,0,8,0" IsHitTestVisible="False" FontSize="10" />
-                                </Grid>
-                                <TextBlock x:Name="TxtFolderStats" Text="0 folders" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" FontSize="11" />
-                            </StackPanel>
-                        </DockPanel>
-                    </Border>
+                    <!-- Verdict Filter Bar & Guaranteed Pinned Search Box -->
+                    <Grid Grid.Row="1" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- WrapPanel: Filter chips wrap gracefully without squashing search -->
+                        <WrapPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="Filter Verdict:" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="11" FontWeight="SemiBold" />
+                            <RadioButton x:Name="RbFilterFolderAll" GroupName="FolderVerdictFilterGroup" Content="All Folders" Style="{StaticResource VortexFilterChip}" IsChecked="True" Click="OnFolderFilterChanged" Margin="0,2,6,2" />
+                            <RadioButton x:Name="RbFilterFolderOrphaned" GroupName="FolderVerdictFilterGroup" Content="🟣 Orphaned (Safe)" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" Margin="0,2,6,2" />
+                            <RadioButton x:Name="RbFilterFolderSafeDelete" GroupName="FolderVerdictFilterGroup" Content="🟢 Safe to Delete" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" Margin="0,2,6,2" />
+                            <RadioButton x:Name="RbFilterFolderCache" GroupName="FolderVerdictFilterGroup" Content="🔵 Safe Caches" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" Margin="0,2,6,2" />
+                            <RadioButton x:Name="RbFilterFolderRunning" GroupName="FolderVerdictFilterGroup" Content="🔴 App Running" Style="{StaticResource VortexFilterChip}" Click="OnFolderFilterChanged" Margin="0,2,6,2" />
+                        </WrapPanel>
+
+                        <!-- Dedicated Search Column: Never hidden, never crushed -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Grid Width="200" Margin="0,0,10,0">
+                                <TextBox x:Name="TxtFolderSearch" Style="{StaticResource FluentSearchBox}"
+                                         Padding="10,0,28,0" Height="32"
+                                         TextChanged="OnFolderSearchChanged"
+                                         ToolTip="Search folders by name or path" />
+                                <TextBlock x:Name="TxtFolderSearchPlaceholder" Text="Search folders..."
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           VerticalAlignment="Center" Margin="10,0,0,0"
+                                           IsHitTestVisible="False" FontSize="11" />
+                                <TextBlock Text="🔍" Foreground="{DynamicResource TextMutedBrush}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                           Margin="0,0,10,0" IsHitTestVisible="False" FontSize="11" />
+                            </Grid>
+                            <TextBlock x:Name="TxtFolderStats" Text="0 folders" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" FontSize="11" />
+                        </StackPanel>
+                    </Grid>
 
                     <!-- Folder Cards Grid -->
                     <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
@@ -1039,7 +1045,7 @@
                             <DockPanel Grid.Row="0" Margin="0,0,0,10">
                                 <Grid DockPanel.Dock="Left" Width="280">
                                     <TextBox x:Name="TxtNetFilter" Style="{StaticResource FluentSearchBox}"
-                                             Padding="10,6,28,6" Height="32"
+                                             Padding="10,0,28,0" Height="32"
                                              TextChanged="OnNetFilterChanged"
                                              ToolTip="Filter by process name, PID, IP, port, or protocol" />
                                     <TextBlock x:Name="TxtNetFilterPlaceholder" Text="Filter sockets, IP, process..."
@@ -1223,7 +1229,7 @@
                             <DockPanel Grid.Row="1" Margin="0,0,0,10">
                                 <Grid DockPanel.Dock="Left" Width="360">
                                     <TextBox x:Name="TxtNetDiscoverFilter" Style="{StaticResource FluentSearchBox}"
-                                             Padding="10,6,28,6" Height="32"
+                                             Padding="10,0,28,0" Height="32"
                                              TextChanged="OnNetDiscoverFilterChanged"
                                              ToolTip="Search apps by name, executable, category, or path" />
                                     <TextBlock x:Name="TxtNetDiscoverFilterPlaceholder" Text="Search all PC apps (e.g. Antigravity, Discord, Code)..."
@@ -1334,7 +1340,7 @@
                             <DockPanel Grid.Row="0" Margin="0,0,0,10">
                                 <Grid DockPanel.Dock="Left" Width="280">
                                     <TextBox x:Name="TxtNetAllowedFilter" Style="{StaticResource FluentSearchBox}"
-                                             Padding="10,6,28,6" Height="32"
+                                             Padding="10,0,28,0" Height="32"
                                              TextChanged="OnNetAllowedFilterChanged" />
                                     <TextBlock x:Name="TxtNetAllowedFilterPlaceholder" Text="Filter allowed apps..."
                                                Foreground="{DynamicResource TextMutedBrush}"
@@ -1400,7 +1406,7 @@
                             <DockPanel Grid.Row="0" Margin="0,0,0,10">
                                 <Grid DockPanel.Dock="Left" Width="280">
                                     <TextBox x:Name="TxtNetBlockedFilter" Style="{StaticResource FluentSearchBox}"
-                                             Padding="10,6,28,6" Height="32"
+                                             Padding="10,0,28,0" Height="32"
                                              TextChanged="OnNetBlockedFilterChanged" />
                                     <TextBlock x:Name="TxtNetBlockedFilterPlaceholder" Text="Filter blocked apps..."
                                                Foreground="{DynamicResource TextMutedBrush}"
@@ -1462,7 +1468,7 @@
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Grid Width="200" Margin="0,0,8,0">
                                 <TextBox x:Name="TxtServiceFilter" Style="{StaticResource FluentSearchBox}"
-                                         Padding="10,6,28,6" Height="32"
+                                         Padding="10,0,28,0" Height="32"
                                          TextChanged="OnServiceFilterChanged"
                                          ToolTip="Filter services by name, display title, status, or category" />
                                 <TextBlock x:Name="TxtServiceFilterPlaceholder" Text="Filter all services..."
@@ -1945,7 +1951,7 @@
                             <DockPanel Grid.Row="0" Margin="0,0,0,10">
                                 <Grid DockPanel.Dock="Left" Width="300">
                                     <TextBox x:Name="TxtVaultFilter" Style="{StaticResource FluentSearchBox}"
-                                             Padding="10,6,28,6" Height="32"
+                                             Padding="10,0,28,0" Height="32"
                                              TextChanged="OnVaultFilterChanged"
                                              ToolTip="Filter protected folders by name or path" />
                                     <TextBlock x:Name="TxtVaultFilterPlaceholder" Text="Filter protected folders..."
@@ -2363,7 +2369,7 @@
                         <DockPanel Grid.Row="0" Margin="0,0,0,10">
                             <Grid DockPanel.Dock="Left" Width="340">
                                 <TextBox x:Name="TxtAppFilter" Style="{StaticResource FluentSearchBox}"
-                                         Padding="10,6,28,6" Height="32"
+                                         Padding="10,0,28,0" Height="32"
                                          TextChanged="OnAppFilterChanged"
                                          ToolTip="Search installed apps by name or publisher" />
                                 <TextBlock x:Name="TxtAppFilterPlaceholder" Text="Search installed apps (e.g. Chrome, Discord)..."

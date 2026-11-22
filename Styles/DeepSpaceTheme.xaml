@@ -27,7 +27,7 @@
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E3E3E8" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9FA0C3" />
     <SolidColorBrush x:Key="TextMutedBrush" Color="#6C6D93" />
-    <SolidColorBrush x:Key="ProgressBarTrackBrush" Color="#252438" />
+    <SolidColorBrush x:Key="ProgressBarTrackBrush" Color="#353652" />
 
     <!-- Sleek ScrollBar Brushes -->
     <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#506C6D93" />
@@ -171,20 +171,13 @@
                 <ControlTemplate TargetType="ProgressBar">
                     <Grid x:Name="TemplateRoot" ClipToBounds="True">
                         <!-- Progress Track -->
-                        <Border x:Name="PART_TrackBorder" Background="{TemplateBinding Background}" CornerRadius="3.5" />
+                        <Border x:Name="PART_Track" Background="{TemplateBinding Background}" CornerRadius="3.5" />
 
-                        <!-- Determinate Track Indicator -->
-                        <Track x:Name="PART_Track">
-                            <Track.DecreaseRepeatButton>
-                                <RepeatButton Focusable="False">
-                                    <RepeatButton.Template>
-                                        <ControlTemplate TargetType="RepeatButton">
-                                            <Border Background="{TemplateBinding Foreground}" CornerRadius="3.5" />
-                                        </ControlTemplate>
-                                    </RepeatButton.Template>
-                                </RepeatButton>
-                            </Track.DecreaseRepeatButton>
-                        </Track>
+                        <!-- Determinate Progress Indicator -->
+                        <Border x:Name="PART_Indicator"
+                                HorizontalAlignment="Left"
+                                Background="{TemplateBinding Foreground}"
+                                CornerRadius="3.5" />
 
                         <!-- Indeterminate Glowing Indicator (Active when IsIndeterminate=True) -->
                         <Border x:Name="IndeterminateIndicator"
@@ -207,7 +200,7 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsIndeterminate" Value="True">
-                            <Setter TargetName="PART_Track" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="PART_Indicator" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="IndeterminateIndicator" Property="Visibility" Value="Visible" />
                             <Trigger.EnterActions>
                                 <BeginStoryboard x:Name="IndeterminateStoryboard">
@@ -580,9 +573,10 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="10,0,28,0" />
         <Setter Property="SelectionBrush" Value="{DynamicResource AccentPrimaryBrush}" />
-        <Setter Property="CaretBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -590,8 +584,14 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="8">
-                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                            CornerRadius="8"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden"
+                                      VerticalAlignment="Center"
+                                      Margin="{TemplateBinding Padding}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -614,9 +614,10 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI" />
         <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="10,0,10,0" />
         <Setter Property="SelectionBrush" Value="{DynamicResource AccentPrimaryBrush}" />
-        <Setter Property="CaretBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="PasswordBox">
@@ -624,8 +625,14 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="8">
-                        <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                            CornerRadius="8"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden"
+                                      VerticalAlignment="Center"
+                                      Margin="{TemplateBinding Padding}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">

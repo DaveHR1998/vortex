@@ -64,7 +64,7 @@ namespace Vortex.Core.SystemIntegration
                 res["StatusDangerBrush"] = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
 
                 // Progress Bar Track
-                res["ProgressBarTrackBrush"] = new SolidColorBrush(Color.FromRgb(0x25, 0x24, 0x38));
+                res["ProgressBarTrackBrush"] = new SolidColorBrush(Color.FromRgb(0x35, 0x36, 0x52));
 
                 // ScrollBar & Aliases
                 res["ScrollBarThumbBrush"] = new SolidColorBrush(Color.FromArgb(0x50, 0x6C, 0x6D, 0x93));
