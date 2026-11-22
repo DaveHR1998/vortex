@@ -85,7 +85,7 @@
                     <ProgressBar x:Name="PbProgress"
                                  Height="10"
                                  Minimum="0" Maximum="100" Value="0"
-                                 Background="{DynamicResource BorderBrush}"
+                                 Background="{DynamicResource ProgressBarTrackBrush}"
                                  Foreground="{DynamicResource AccentPrimaryBrush}"
                                  Margin="0,0,0,6" />
 

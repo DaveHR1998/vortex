@@ -432,6 +432,14 @@ namespace Vortex
             UpdateDwmBackdrop(_themeService.IsDarkMode);
             BtnToggleTheme.Content = _themeService.IsDarkMode ? "🌙" : "☀️";
             BtnToggleTheme.ToolTip = _themeService.IsDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode";
+            if (TxtOverviewUpdateBadge != null && BadgeOverviewUpdate != null)
+            {
+                if (BadgeOverviewUpdate.Background == (Brush)FindResource("AccentSecondaryBrush"))
+                {
+                    TxtOverviewUpdateBadge.Foreground = _themeService.IsDarkMode ? Brushes.Black : Brushes.White;
+                }
+            }
+            UpdateHeaderTelemetry();
             TxtStatusBar.Text = $"Theme switched to {(_themeService.IsDarkMode ? "Vortex Dark" : "Vortex Light")}.";
         }
 
@@ -772,6 +780,7 @@ namespace Vortex
                         {
                             TxtOverviewUpdateBadge.Text = $"⚡ {updates.Count} UPDATE{(updates.Count > 1 ? "S" : "")} AVAILABLE";
                             if (BadgeOverviewUpdate != null) BadgeOverviewUpdate.Background = (Brush)FindResource("AccentSecondaryBrush");
+                            TxtOverviewUpdateBadge.Foreground = _themeService.IsDarkMode ? Brushes.Black : Brushes.White;
                         }
                         if (TxtOverviewUpdateHeader != null)
                             TxtOverviewUpdateHeader.Text = $"{updates.Count} Application{(updates.Count > 1 ? "s" : "")} Ready for Upgrade";
@@ -786,6 +795,7 @@ namespace Vortex
                         {
                             TxtOverviewUpdateBadge.Text = "✓ UP TO DATE";
                             if (BadgeOverviewUpdate != null) BadgeOverviewUpdate.Background = (Brush)FindResource("StatusSafeBrush");
+                            TxtOverviewUpdateBadge.Foreground = Brushes.White;
                         }
                         if (TxtOverviewUpdateHeader != null)
                             TxtOverviewUpdateHeader.Text = "All Installed Applications Up to Date";

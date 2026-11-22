@@ -395,7 +395,7 @@
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewCpuLoad" Text="12%" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewCpu" Value="12" Maximum="100" Height="7" Background="#252438" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
+                                    <ProgressBar x:Name="PbOverviewCpu" Value="12" Maximum="100" Height="7" Background="{DynamicResource ProgressBarTrackBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
 
                                     <!-- Memory Load -->
                                     <Grid Margin="0,0,0,6">
@@ -405,7 +405,7 @@
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewRamLoad" Text="48% (7.6 / 16 GB)" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="7" Background="#252438" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,4" />
+                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="7" Background="{DynamicResource ProgressBarTrackBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,4" />
 
                                     <!-- Top Consumer Pill / Actionable Process Insight -->
                                     <TextBlock x:Name="TxtOverviewTopProcess" Text="🔥 Top Consumer: Calculating active memory hogs..." Foreground="{DynamicResource AccentSecondaryBrush}" FontSize="10" Margin="0,0,0,10" />
@@ -418,7 +418,7 @@
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewDiskLoad" Text="45% Used" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewDisk" Value="45" Maximum="100" Height="7" Background="#252438" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
+                                    <ProgressBar x:Name="PbOverviewDisk" Value="45" Maximum="100" Height="7" Background="{DynamicResource ProgressBarTrackBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
 
                                     <!-- System Uptime & Power Scheme -->
                                     <Grid Margin="0,2,0,0">
@@ -1273,7 +1273,7 @@
                                             <GridViewColumn Header="Access Rule Status" Width="160">
                                                 <GridViewColumn.CellTemplate>
                                                     <DataTemplate>
-                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#18FFFFFF" BorderThickness="1">
+                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="{DynamicResource SurfaceSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                                             <TextBlock Text="{Binding StatusDisplay}" FontSize="11" FontWeight="SemiBold">
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
@@ -1548,7 +1548,7 @@
                                     <GridViewColumn Header="Startup Mode" Width="110">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#12FFFFFF">
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="{DynamicResource SurfaceSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                                     <TextBlock Text="{Binding StartupTypeDisplay}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
                                                 </Border>
                                             </DataTemplate>
@@ -2004,7 +2004,7 @@
                                             <GridViewColumn Header="Status" Width="180">
                                                 <GridViewColumn.CellTemplate>
                                                     <DataTemplate>
-                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#18FFFFFF" BorderThickness="1">
+                                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="{DynamicResource SurfaceSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                                             <TextBlock Text="{Binding StatusDisplay}" Foreground="{Binding StatusBadgeColor}" FontSize="11" FontWeight="SemiBold" />
                                                         </Border>
                                                     </DataTemplate>
@@ -2082,7 +2082,7 @@
                                     <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                             <TextBlock Text="Removable Media Copy-Protection (DLP)" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" />
-                                            <Border CornerRadius="4" Padding="6,2" Background="#20000000">
+                                            <Border CornerRadius="4" Padding="6,2" Background="{DynamicResource SurfaceSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                                 <TextBlock x:Name="TxtUsbPolicyBadge" Text="STATUS: UNPROTECTED" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" />
                                             </Border>
                                         </StackPanel>
@@ -2142,7 +2142,7 @@
                                             <GridViewColumn Header="Write-Protection Status" Width="240">
                                                 <GridViewColumn.CellTemplate>
                                                     <DataTemplate>
-                                                        <Border CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" Background="#18FFFFFF" BorderThickness="1">
+                                                        <Border CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" Background="{DynamicResource SurfaceSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                                             <TextBlock Text="{Binding StatusDisplay}" Foreground="{Binding StatusBadgeColor}" FontSize="11" FontWeight="SemiBold" />
                                                         </Border>
                                                     </DataTemplate>
@@ -2330,14 +2330,14 @@
                                     <TextBlock x:Name="TxtOverallProgressTitle" Text="Overall Progress" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
                                     <TextBlock x:Name="TxtOverallProgressPercent" Text="0%" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" />
                                 </Grid>
-                                <ProgressBar x:Name="PbOverallProgress" Grid.Row="1" Height="7" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="#252438" Margin="0,0,0,12" />
+                                <ProgressBar x:Name="PbOverallProgress" Grid.Row="1" Height="7" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource ProgressBarTrackBrush}" Margin="0,0,0,12" />
 
                                 <!-- Current Package Download/Install Progress Header -->
                                 <Grid Grid.Row="2" Margin="0,0,0,6">
                                     <TextBlock x:Name="TxtPackageProgressTitle" Text="Download &amp; Install Progress" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock x:Name="TxtPackageProgressDetail" Text="" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="SemiBold" />
                                 </Grid>
-                                <ProgressBar x:Name="PbPackageProgress" Grid.Row="3" Height="8" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="#252438" />
+                                <ProgressBar x:Name="PbPackageProgress" Grid.Row="3" Height="8" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource ProgressBarTrackBrush}" />
                             </Grid>
                         </Border>
 

@@ -27,6 +27,7 @@
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E3E3E8" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9FA0C3" />
     <SolidColorBrush x:Key="TextMutedBrush" Color="#6C6D93" />
+    <SolidColorBrush x:Key="ProgressBarTrackBrush" Color="#252438" />
 
     <!-- Sleek ScrollBar Brushes -->
     <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#506C6D93" />
@@ -162,7 +163,7 @@
     <!-- Custom Fluent ProgressBar with Determinate & Indeterminate Support -->
     <Style TargetType="ProgressBar">
         <Setter Property="Height" Value="7" />
-        <Setter Property="Background" Value="#252438" />
+        <Setter Property="Background" Value="{DynamicResource ProgressBarTrackBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
