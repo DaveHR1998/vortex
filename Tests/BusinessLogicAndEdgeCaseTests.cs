@@ -26,6 +26,7 @@ namespace Vortex.Tests
             Test_SystemInfoExpandedHardwareSpecsAndUpdaterCleanMilestones();
             Test_DeepFocusModeProcessSuspensionAndLifecycle();
             Test_QuickLauncherCatalogAndSystemHealthMetrics();
+            Test_DeepUninstallerEnumerationAndResidualScan();
         }
 
         private static void Test_ZeroByteAndEmptyDirPreservation()
@@ -501,6 +502,39 @@ namespace Vortex.Tests
                 throw new Exception("QuickSearchItem model initialization failed!");
 
             TestRunner.Pass("Overview: 4-Pillar Health Diagnostics & Spotlight Quick Launcher Catalog");
+        }
+
+        private static void Test_DeepUninstallerEnumerationAndResidualScan()
+        {
+            string dbPath = Path.Combine(Path.GetTempPath(), "VortexTest_DB_Uninstall_" + Guid.NewGuid().ToString("N") + ".db");
+            var db = new DatabaseService(dbPath);
+            var uninstaller = new Vortex.Core.SystemManagement.UninstallerService(db);
+
+            // 1. Verify application enumeration from 32-bit & 64-bit registry
+            var apps = uninstaller.GetInstalledApplications();
+            if (apps == null)
+                throw new Exception("UninstallerService GetInstalledApplications returned null!");
+
+            // 2. Test residual scanning on a mock or real target
+            var testApp = new Vortex.Core.SystemManagement.InstalledAppModel
+            {
+                DisplayName = "VortexTestNonExistentApp",
+                Publisher = "VortexTestPublisher",
+                InstallLocation = @"C:\Program Files\VortexTestDummyNonExistent"
+            };
+
+            var leftovers = uninstaller.ScanLeftovers(testApp);
+            if (leftovers == null || leftovers.LeftoverFiles == null || leftovers.LeftoverRegistry == null)
+                throw new Exception("ScanLeftovers returned invalid null collections!");
+
+            // Ensure system folders are never matched
+            if (leftovers.LeftoverFiles.Any(f => f.Path.EndsWith("Windows", StringComparison.OrdinalIgnoreCase) ||
+                                                 f.Path.EndsWith("System32", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new Exception("Critical system folder was mistakenly flagged as uninstaller residual!");
+            }
+
+            TestRunner.Pass("Uninstaller: Deep App Enumeration, Leftover Residual Discovery & System Whitelist");
         }
     }
 }

@@ -2226,127 +2226,263 @@
                     </Grid>
                 </Grid>
 
-                <!-- TAB 11: Software Updater -->
+                <!-- TAB 11: Software & App Intelligence (Updater & Deep Uninstaller) -->
                 <Grid x:Name="PanelUpdater" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <!-- Top Title Header -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Software &amp; App Intelligence" Style="{StaticResource TitleHeaderStyle}" />
+                            <TextBlock Text="Keep software updated via Winget and deeply uninstall programs without leaving residual AppData or registry clutter." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- SubTab Navigation Strip -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+                        <RadioButton x:Name="SubTabSoftwareUpdates" Style="{StaticResource SidebarRadioButton}" Content="📦 Software Updates" IsChecked="True" Checked="OnUpdaterSubTabChanged" Margin="0,0,8,0" Height="32" Width="180" />
+                        <RadioButton x:Name="SubTabAppUninstaller" Style="{StaticResource SidebarRadioButton}" Content="🗑️ Deep App Uninstaller" Checked="OnUpdaterSubTabChanged" Margin="0,0,8,0" Height="32" Width="200" />
+                    </StackPanel>
+
+                    <!-- VIEW 1: Software Updates (Winget) -->
+                    <Grid x:Name="ViewSoftwareUpdates" Grid.Row="2" Visibility="Visible">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0">
-                            <TextBlock Text="Software Updater" Style="{StaticResource TitleHeaderStyle}" />
-                            <TextBlock Text="Keep installed applications updated via winget." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
                             <Button Style="{StaticResource VortexSecondaryButton}" Content="☑ Select All Known" Click="OnSelectAllKnownClick" Height="34" Padding="14,0" Margin="0,0,8,0" />
                             <Button Style="{StaticResource VortexSecondaryButton}" Content="🔍 Check for Updates" Click="OnCheckUpdatesClick" Height="34" Padding="14,0" Margin="0,0,8,0" />
                             <Button x:Name="BtnCleanCache" Style="{StaticResource VortexSecondaryButton}" Content="🧹 Clear Cache" Click="OnCleanDownloadCacheClick" Height="34" Padding="14,0" Margin="0,0,8,0" ToolTip="Deletes temporary installer files left behind by winget to free up disk space." />
                             <Button x:Name="BtnStopUpdater" Style="{StaticResource VortexDangerButton}" Content="⏹ Stop Update" Click="OnStopUpdateClick" Height="34" Padding="16,0" Margin="0,0,8,0" Visibility="Collapsed" FontWeight="SemiBold" />
                             <Button x:Name="BtnUpdateSelected" Style="{StaticResource VortexPrimaryButton}" Content="🚀 Update Selected" Click="OnUpdateSelectedClick" Height="34" Padding="16,0" FontWeight="SemiBold" />
                         </StackPanel>
+
+                        <ProgressBar x:Name="PbUpdaterScan" Grid.Row="1" Height="3" IsIndeterminate="True" Margin="0,0,0,10" Visibility="Collapsed" Foreground="{DynamicResource AccentPrimaryBrush}" Background="Transparent" />
+
+                        <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2" Margin="0,0,0,10">
+                            <ListView x:Name="LvUpdater" MaxHeight="240" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionMode="Single">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="46">
+                                            <GridViewColumn.Header>
+                                                <CheckBox x:Name="ChkSelectAllHeader" Click="OnSelectAllHeaderClick" VerticalAlignment="Center" HorizontalAlignment="Center" ToolTip="Select / Deselect All Known" />
+                                            </GridViewColumn.Header>
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Application" Width="200">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Package ID" Width="210">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Id}" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Current" Width="110">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding CurrentVer}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="4,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Latest" Width="110">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding LatestVer}" FontWeight="Medium" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="4,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Status" Width="95">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{Binding BadgeColor}" CornerRadius="4" Padding="7,2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2,0">
+                                                        <TextBlock Text="{Binding BadgeText}" FontSize="10" FontWeight="Bold" Foreground="White" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Border>
+
+                        <!-- Active Update Progress Card -->
+                        <Border x:Name="BorderUpdaterProgress" Grid.Row="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10" Visibility="Collapsed">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Overall Progress Header -->
+                                <Grid Grid.Row="0" Margin="0,0,0,6">
+                                    <TextBlock x:Name="TxtOverallProgressTitle" Text="Overall Progress" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    <TextBlock x:Name="TxtOverallProgressPercent" Text="0%" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" />
+                                </Grid>
+                                <ProgressBar x:Name="PbOverallProgress" Grid.Row="1" Height="6" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="#1F1F2E" Margin="0,0,0,12" />
+
+                                <!-- Current Package Download/Install Progress Header -->
+                                <Grid Grid.Row="2" Margin="0,0,0,6">
+                                    <TextBlock x:Name="TxtPackageProgressTitle" Text="Download &amp; Install Progress" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock x:Name="TxtPackageProgressDetail" Text="" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </Grid>
+                                <ProgressBar x:Name="PbPackageProgress" Grid.Row="3" Height="8" Maximum="100" Value="0" Foreground="#00E599" Background="#1F1F2E" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Live Terminal Output -->
+                        <Border Grid.Row="4" x:Name="BorderUpdaterTerminal" Background="#0A0A0F" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Visibility="Collapsed">
+                            <ScrollViewer x:Name="SvUpdaterOutput" VerticalScrollBarVisibility="Auto">
+                                <TextBlock x:Name="TxtUpdaterOutput" FontFamily="Consolas" FontSize="12" Foreground="#00E599" TextWrapping="Wrap" />
+                            </ScrollViewer>
+                        </Border>
+
+                        <TextBlock x:Name="TxtUpdaterStatus" Grid.Row="5" Text="Ready — click 'Check for Updates' to discover available upgrades." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,8,0,0" />
                     </Grid>
 
-                    <ProgressBar x:Name="PbUpdaterScan" Grid.Row="1" Height="3" IsIndeterminate="True" Margin="0,0,0,10" Visibility="Collapsed" Foreground="{DynamicResource AccentPrimaryBrush}" Background="Transparent" />
+                    <!-- VIEW 2: Deep App Uninstaller -->
+                    <Grid x:Name="ViewAppUninstaller" Grid.Row="2" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                    <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2" Margin="0,0,0,10">
-                        <ListView x:Name="LvUpdater" MaxHeight="260" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionMode="Single">
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Width="46">
-                                        <GridViewColumn.Header>
-                                            <CheckBox x:Name="ChkSelectAllHeader" Click="OnSelectAllHeaderClick" VerticalAlignment="Center" HorizontalAlignment="Center" ToolTip="Select / Deselect All Known" />
-                                        </GridViewColumn.Header>
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2,0" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn Header="Application" Width="200">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn Header="Package ID" Width="210">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Id}" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn Header="Current" Width="110">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding CurrentVer}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="4,0" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn Header="Latest" Width="110">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding LatestVer}" FontWeight="Medium" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="4,0" />
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn Header="Status" Width="95">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Border Background="{Binding BadgeColor}" CornerRadius="4" Padding="7,2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2,0">
-                                                    <TextBlock Text="{Binding BadgeText}" FontSize="10" FontWeight="Bold" Foreground="White" />
-                                                </Border>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </Border>
-
-                    <!-- Active Update Progress Card -->
-                    <Border x:Name="BorderUpdaterProgress" Grid.Row="3" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10" Visibility="Collapsed">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-
-                            <!-- Overall Progress Header -->
-                            <Grid Grid.Row="0" Margin="0,0,0,6">
-                                <TextBlock x:Name="TxtOverallProgressTitle" Text="Overall Progress" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                <TextBlock x:Name="TxtOverallProgressPercent" Text="0%" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Bold" />
+                        <!-- Action Bar: Search, Stats, Rescan, Batch Uninstall -->
+                        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                            <Grid DockPanel.Dock="Left" Width="340">
+                                <TextBox x:Name="TxtAppFilter" Style="{StaticResource FluentSearchBox}"
+                                         Padding="10,6,28,6" Height="32"
+                                         TextChanged="OnAppFilterChanged"
+                                         ToolTip="Search installed apps by name or publisher" />
+                                <TextBlock x:Name="TxtAppFilterPlaceholder" Text="Search installed apps (e.g. Chrome, Discord)..."
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           VerticalAlignment="Center" Margin="10,0,0,0"
+                                           IsHitTestVisible="False" FontSize="11" />
                             </Grid>
-                            <ProgressBar x:Name="PbOverallProgress" Grid.Row="1" Height="6" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="#1F1F2E" Margin="0,0,0,12" />
 
-                            <!-- Current Package Download/Install Progress Header -->
-                            <Grid Grid.Row="2" Margin="0,0,0,6">
-                                <TextBlock x:Name="TxtPackageProgressTitle" Text="Download &amp; Install Progress" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                                <TextBlock x:Name="TxtPackageProgressDetail" Text="" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock x:Name="TxtInstalledAppsCountBadge" Text="Loading apps..." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold" />
+                                </Border>
+                                <Button Style="{StaticResource VortexSecondaryButton}" Content="🔄 Refresh Apps" Click="OnRefreshInstalledAppsClick" Height="32" Padding="12,0" Margin="0,0,8,0" />
+                                <Button x:Name="BtnBatchUninstall" Style="{StaticResource VortexDangerButton}" Content="🗑️ Uninstall Selected" Click="OnBatchUninstallClick" Height="32" Padding="14,0" FontWeight="SemiBold" Visibility="Collapsed" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Installed Applications List -->
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="2">
+                            <ListView x:Name="LvInstalledApps" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionMode="Single">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="42">
+                                            <GridViewColumn.Header>
+                                                <CheckBox x:Name="ChkSelectAllAppsHeader" Click="OnSelectAllAppsHeaderClick" VerticalAlignment="Center" HorizontalAlignment="Center" ToolTip="Select / Deselect All Apps" />
+                                            </GridViewColumn.Header>
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsSelected}" Click="OnAppSelectionCheckboxChanged" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+
+                                        <GridViewColumn Header="Application" Width="260">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0">
+                                                        <TextBlock Text="{Binding IconEmoji}" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                        <StackPanel VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Text="{Binding DisplayVersion}" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+
+                                        <GridViewColumn Header="Publisher" Width="180">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Publisher}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+
+                                        <GridViewColumn Header="Installed Size" Width="110">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding EstimatedSizeFormatted}" FontWeight="Medium" Foreground="{DynamicResource AccentGlowBrush}" FontSize="11" VerticalAlignment="Center" Margin="4,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+
+                                        <GridViewColumn Header="Install Date" Width="100">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding InstallDate}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" Margin="4,0" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+
+                                        <GridViewColumn Header="Deep Actions" Width="240">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0">
+                                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="🗑️ Deep Uninstall" Click="OnDeepUninstallRowClick" Padding="8,4" FontSize="11" Margin="0,0,6,0" ToolTip="Runs native uninstaller, then scans and shreds all residual AppData and registry leftovers" />
+                                                        <Button Style="{StaticResource VortexDangerButton}" Content="⚡ Force Remove" Click="OnForceRemoveRowClick" Padding="8,4" FontSize="11" ToolTip="Directly shreds all files, AppData, and registry entries without running broken native uninstaller" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Border>
+
+                        <!-- Residual Review Card (Bottom) -->
+                        <Border x:Name="BorderResidualCard" Grid.Row="2" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,10,0,0" Visibility="Collapsed">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="🧹 RESIDUAL LEFTOVERS DISCOVERED" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" FontSize="12" />
+                                        <TextBlock x:Name="TxtResidualCount" Text=" (3 items, 140 MB)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="4,1,0,0" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="TxtResidualDetail" Text="Leftover AppData caches, user files, and orphaned registry entries were discovered." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <Button Style="{StaticResource VortexPrimaryButton}" Content="🧹 Shred All Leftovers" Click="OnShredResidualsClick" Padding="16,6" FontWeight="SemiBold" Margin="0,0,8,0" />
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="✕ Dismiss" Click="OnDismissResidualsClick" Padding="12,6" />
+                                </StackPanel>
                             </Grid>
-                            <ProgressBar x:Name="PbPackageProgress" Grid.Row="3" Height="8" Maximum="100" Value="0" Foreground="#00E599" Background="#1F1F2E" />
-                        </Grid>
-                    </Border>
-
-                    <!-- Live Terminal Output -->
-                    <Border Grid.Row="4" x:Name="BorderUpdaterTerminal" Background="#0A0A0F" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Visibility="Collapsed">
-                        <ScrollViewer x:Name="SvUpdaterOutput" VerticalScrollBarVisibility="Auto">
-                            <TextBlock x:Name="TxtUpdaterOutput" FontFamily="Consolas" FontSize="12" Foreground="#00E599" TextWrapping="Wrap" />
-                        </ScrollViewer>
-                    </Border>
-
-                    <TextBlock x:Name="TxtUpdaterStatus" Grid.Row="5" Text="Ready — click 'Check for Updates' to discover available upgrades." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,8,0,0" />
+                        </Border>
+                    </Grid>
                 </Grid>
 
                 <!-- TAB 12: System Info -->

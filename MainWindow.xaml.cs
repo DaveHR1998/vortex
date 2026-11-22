@@ -55,6 +55,7 @@ namespace Vortex
         private readonly PrivacyEraser _privacyEraser;
         private readonly IdentityScanner _identityScanner;
         private readonly WingetService _wingetService;
+        private readonly UninstallerService _uninstallerService;
         private readonly ProcessBlockService _blockService;
         private readonly TelemetryLockdownEngine _telemetryLockdown;
         private DispatcherTimer? _sensorTimer;
@@ -74,6 +75,8 @@ namespace Vortex
         private List<ProcessBlockService.BlockedItemModel> _allNetBlockedApps = new();
         private List<VaultFolderModel> _allVaultFolders = new();
         private List<RemovableDriveModel> _allRemovableDrives = new();
+        private List<InstalledAppModel> _allInstalledApps = new();
+        private DeepUninstallPreview? _pendingResidualPreview;
         private bool _isSyncingVaultSettings = false;
 
         public MainWindow(string[]? startupArgs = null)
@@ -97,6 +100,7 @@ namespace Vortex
             _privacyEraser = new PrivacyEraser();
             _identityScanner = new IdentityScanner();
             _wingetService = new WingetService();
+            _uninstallerService = new UninstallerService(_db);
             _vaultCrypto = new VaultCryptoEngine();
             _usbDlp = new UsbDlpService(_db);
             _folderLockService = new FolderLockService(_db, _vaultCrypto, _usbDlp);
@@ -789,7 +793,11 @@ namespace Vortex
             }
             else if (NavUpdater.IsChecked == true)
             {
-                TxtBreadcrumb.Text = "Software Updater";
+                TxtBreadcrumb.Text = "Software & App Intelligence";
+                if (SubTabAppUninstaller?.IsChecked == true && _allInstalledApps.Count == 0)
+                {
+                    _ = RefreshInstalledAppsAsync();
+                }
             }
             else if (NavSysInfo.IsChecked == true)
             {
@@ -962,7 +970,8 @@ namespace Vortex
                 new() { Icon = "🛡️", Title = "Identity Shield", Subtitle = "Secrets shredder, LSA protection & Wi-Fi", Category = "Navigation", Action = () => NavIdentity.IsChecked = true },
                 new() { Icon = "🔒", Title = "Encrypted Vault", Subtitle = "AES-256-GCM directory locking & encryption", Category = "Navigation", Action = () => NavVault.IsChecked = true },
                 new() { Icon = "🛡️", Title = "USB DLP Protection", Subtitle = "USB mass storage write protection & policies", Category = "Navigation", Action = () => { NavVault.IsChecked = true; SubTabVaultUsb.IsChecked = true; } },
-                new() { Icon = "📦", Title = "Software Updater", Subtitle = "Winget application updates & version tracker", Category = "Navigation", Action = () => NavUpdater.IsChecked = true },
+                new() { Icon = "📦", Title = "Software Updater", Subtitle = "Winget application updates & version tracker", Category = "Navigation", Action = () => { NavUpdater.IsChecked = true; SubTabSoftwareUpdates.IsChecked = true; } },
+                new() { Icon = "🗑️", Title = "Deep App Uninstaller", Subtitle = "Deeply uninstall apps & shred residual AppData", Category = "Navigation", Action = () => { NavUpdater.IsChecked = true; SubTabAppUninstaller.IsChecked = true; } },
                 new() { Icon = "💻", Title = "System Information", Subtitle = "Hardware specs, network, power & security info", Category = "Navigation", Action = () => NavSysInfo.IsChecked = true },
                 new() { Icon = "📜", Title = "Audit History & Logs", Subtitle = "Chronological system event & action logs", Category = "Navigation", Action = () => NavHistory.IsChecked = true },
 
@@ -3087,6 +3096,237 @@ namespace Vortex
                 _updaterCts?.Dispose();
                 _updaterCts = null;
             }
+        }
+
+        private void OnUpdaterSubTabChanged(object sender, RoutedEventArgs e)
+        {
+            if (ViewSoftwareUpdates == null || ViewAppUninstaller == null) return;
+
+            ViewSoftwareUpdates.Visibility = SubTabSoftwareUpdates.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            ViewAppUninstaller.Visibility = SubTabAppUninstaller.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
+            if (SubTabAppUninstaller.IsChecked == true && _allInstalledApps.Count == 0)
+            {
+                _ = RefreshInstalledAppsAsync();
+            }
+        }
+
+        private async Task RefreshInstalledAppsAsync()
+        {
+            try
+            {
+                if (TxtInstalledAppsCountBadge != null) TxtInstalledAppsCountBadge.Text = "Scanning apps...";
+                TxtStatusBar.Text = "Scanning installed applications across 32-bit and 64-bit Windows registry hives...";
+
+                _allInstalledApps = await Task.Run(() => _uninstallerService.GetInstalledApplications());
+
+                ApplyAppFilter();
+
+                long totalBytes = _allInstalledApps.Sum(a => a.EstimatedSizeBytes);
+                double totalGb = totalBytes / (1024.0 * 1024.0 * 1024.0);
+                string sizeText = totalGb >= 1.0 ? $"{totalGb:F1} GB Total" : $"{totalBytes / (1024.0 * 1024.0):F0} MB Total";
+
+                if (TxtInstalledAppsCountBadge != null)
+                {
+                    TxtInstalledAppsCountBadge.Text = $"{_allInstalledApps.Count} Apps Installed • {sizeText}";
+                }
+
+                TxtStatusBar.Text = $"Discovered {_allInstalledApps.Count} installed applications ({sizeText}).";
+            }
+            catch (Exception ex)
+            {
+                TxtStatusBar.Text = $"Error discovering applications: {ex.Message}";
+            }
+        }
+
+        private void OnRefreshInstalledAppsClick(object sender, RoutedEventArgs e)
+        {
+            _ = RefreshInstalledAppsAsync();
+        }
+
+        private void OnAppFilterChanged(object sender, TextChangedEventArgs e)
+        {
+            if (TxtAppFilterPlaceholder != null)
+            {
+                TxtAppFilterPlaceholder.Visibility = string.IsNullOrEmpty(TxtAppFilter?.Text)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+            ApplyAppFilter();
+        }
+
+        private void ApplyAppFilter()
+        {
+            if (LvInstalledApps == null) return;
+
+            string filter = TxtAppFilter?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (string.IsNullOrEmpty(filter))
+            {
+                LvInstalledApps.ItemsSource = _allInstalledApps;
+            }
+            else
+            {
+                LvInstalledApps.ItemsSource = _allInstalledApps
+                    .Where(a => a.DisplayName.ToLowerInvariant().Contains(filter) ||
+                                a.Publisher.ToLowerInvariant().Contains(filter))
+                    .ToList();
+            }
+        }
+
+        private void OnSelectAllAppsHeaderClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox chk && LvInstalledApps.ItemsSource is IEnumerable<InstalledAppModel> items)
+            {
+                bool isChecked = chk.IsChecked == true;
+                foreach (var app in items)
+                    app.IsSelected = isChecked;
+                UpdateBatchUninstallButton();
+            }
+        }
+
+        private void OnAppSelectionCheckboxChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateBatchUninstallButton();
+        }
+
+        private void UpdateBatchUninstallButton()
+        {
+            if (BtnBatchUninstall == null) return;
+            int count = _allInstalledApps.Count(a => a.IsSelected);
+            if (count > 0)
+            {
+                BtnBatchUninstall.Visibility = Visibility.Visible;
+                BtnBatchUninstall.Content = $"🗑️ Uninstall Selected ({count})";
+            }
+            else
+            {
+                BtnBatchUninstall.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void OnDeepUninstallRowClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.DataContext is InstalledAppModel app)
+            {
+                bool confirmed = VortexDialogWindow.ShowConfirm(this,
+                    $"Deep Uninstall {app.DisplayName}",
+                    $"This will execute the native uninstaller for '{app.DisplayName}', and then perform a deep scan to discover and wipe all leftover AppData caches, temporary files, and orphaned registry entries.\n\nProceed?",
+                    "Deep Uninstall");
+
+                if (!confirmed) return;
+
+                TxtStatusBar.Text = $"Running uninstaller for '{app.DisplayName}'...";
+
+                var (success, msg) = await Task.Run(() => _uninstallerService.ExecuteNativeUninstall(app));
+                TxtStatusBar.Text = msg;
+
+                // Perform Deep Residual Scan
+                TxtStatusBar.Text = $"Scanning for leftover residual files and registry entries for '{app.DisplayName}'...";
+                var preview = await Task.Run(() => _uninstallerService.ScanLeftovers(app));
+
+                if (preview.LeftoverFiles.Count > 0 || preview.LeftoverRegistry.Count > 0)
+                {
+                    _pendingResidualPreview = preview;
+                    ShowResidualCard(preview);
+                }
+                else
+                {
+                    TxtStatusBar.Text = $"Deep clean complete: No residual leftovers found for '{app.DisplayName}'.";
+                    VortexDialogWindow.ShowSuccess(this, "Uninstallation Complete", "Clean System State", "Zero Residuals",
+                        $"'{app.DisplayName}' was cleanly removed. No leftover AppData directories or registry entries were detected.");
+                }
+
+                await RefreshInstalledAppsAsync();
+            }
+        }
+
+        private async void OnForceRemoveRowClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.DataContext is InstalledAppModel app)
+            {
+                bool confirmed = VortexDialogWindow.ShowConfirm(this,
+                    $"Force Remove {app.DisplayName}?",
+                    $"WARNING: Force Removal bypasses the native uninstaller. It will forcefully terminate running processes, shred all associated AppData and Program Files directories, and purge registry keys for '{app.DisplayName}'.\n\nUse this for broken or corrupted software that cannot be uninstalled normally. Continue?",
+                    "Force Remove");
+
+                if (!confirmed) return;
+
+                TxtStatusBar.Text = $"Force purging '{app.DisplayName}'...";
+
+                var (success, summary) = await Task.Run(() => _uninstallerService.ForceUninstall(app));
+
+                TxtStatusBar.Text = summary;
+                VortexDialogWindow.ShowSuccess(this, "Force Removal Complete", "Purged App & Residuals", "Clean State", summary);
+
+                await RefreshInstalledAppsAsync();
+            }
+        }
+
+        private async void OnBatchUninstallClick(object sender, RoutedEventArgs e)
+        {
+            var selected = _allInstalledApps.Where(a => a.IsSelected).ToList();
+            if (selected.Count == 0) return;
+
+            bool confirmed = VortexDialogWindow.ShowConfirm(this,
+                $"Batch Uninstall ({selected.Count} Apps)",
+                $"You have selected {selected.Count} applications for uninstallation:\n" +
+                string.Join("\n", selected.Take(5).Select(a => $" • {a.DisplayName}")) +
+                (selected.Count > 5 ? $"\n • ...and {selected.Count - 5} more." : "") +
+                "\n\nVortex will execute each uninstaller sequentially and scan for leftovers. Continue?",
+                "Batch Uninstall");
+
+            if (!confirmed) return;
+
+            int completed = 0;
+            foreach (var app in selected)
+            {
+                TxtStatusBar.Text = $"Uninstalling [{completed + 1}/{selected.Count}] '{app.DisplayName}'...";
+                await Task.Run(() => _uninstallerService.ExecuteNativeUninstall(app));
+                var preview = await Task.Run(() => _uninstallerService.ScanLeftovers(app));
+                if (preview.LeftoverFiles.Count > 0 || preview.LeftoverRegistry.Count > 0)
+                {
+                    await Task.Run(() => _uninstallerService.CleanLeftovers(preview.LeftoverFiles, preview.LeftoverRegistry));
+                }
+                completed++;
+            }
+
+            TxtStatusBar.Text = $"Batch uninstallation complete: processed {completed} applications.";
+            VortexDialogWindow.ShowSuccess(this, "Batch Uninstall Finished", $"{completed} Apps Processed", "Residuals Wiped",
+                $"Successfully processed all {completed} selected applications and cleared residual files.");
+
+            await RefreshInstalledAppsAsync();
+            UpdateBatchUninstallButton();
+        }
+
+        private void ShowResidualCard(DeepUninstallPreview preview)
+        {
+            if (BorderResidualCard == null || TxtResidualCount == null || TxtResidualDetail == null) return;
+
+            BorderResidualCard.Visibility = Visibility.Visible;
+            TxtResidualCount.Text = $"({preview.LeftoverFiles.Count} directories, {preview.TotalResidualSizeFormatted} • {preview.LeftoverRegistry.Count} registry keys)";
+            TxtResidualDetail.Text = $"Discovered leftover artifacts for '{preview.App.DisplayName}' in {string.Join(", ", preview.LeftoverFiles.Take(2).Select(f => f.Category))} and Windows Registry.";
+        }
+
+        private async void OnShredResidualsClick(object sender, RoutedEventArgs e)
+        {
+            if (_pendingResidualPreview == null) return;
+
+            TxtStatusBar.Text = "Shredding residual AppData and registry leftovers...";
+            var (files, bytes, keys) = await Task.Run(() => _uninstallerService.CleanLeftovers(_pendingResidualPreview.LeftoverFiles, _pendingResidualPreview.LeftoverRegistry));
+
+            BorderResidualCard.Visibility = Visibility.Collapsed;
+            _pendingResidualPreview = null;
+
+            string freedText = bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024.0):F1} MB" : $"{bytes / 1024.0:F0} KB";
+            TxtStatusBar.Text = $"🧹 Cleaned {files} residual directories ({freedText}) and {keys} registry keys.";
+            VortexDialogWindow.ShowSuccess(this, "Deep Cleaning Complete", "Residuals Purged", "Disk Space Reclaimed",
+                $"Successfully purged {files} leftover directories ({freedText}) and {keys} registry keys.");
+        }
+
+        private void OnDismissResidualsClick(object sender, RoutedEventArgs e)
+        {
+            BorderResidualCard.Visibility = Visibility.Collapsed;
+            _pendingResidualPreview = null;
         }
         #endregion
 
