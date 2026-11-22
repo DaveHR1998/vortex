@@ -78,6 +78,7 @@ namespace Vortex
         private List<InstalledAppModel> _allInstalledApps = new();
         private DeepUninstallPreview? _pendingResidualPreview;
         private bool _isSyncingVaultSettings = false;
+        private DateTime _lastAutoTrimTime = DateTime.MinValue;
 
         public MainWindow(string[]? startupArgs = null)
         {
@@ -154,6 +155,23 @@ namespace Vortex
                 if (_blockService.IsAppAllowed(conn.ProcessName, conn.ProcessPath) || _blockService.IsNotificationMuted(conn.ProcessName))
                     return;
 
+                var s = _db?.GetAppSettings();
+                string level = s?.IntrusionNotificationLevel ?? "All";
+
+                if (string.Equals(level, "Silent", StringComparison.OrdinalIgnoreCase))
+                {
+                    _db?.LogAudit("ThreatShield", "SilentQuarantine", 0, $"{conn.ProcessName} (PID {conn.ProcessId}): {reason}");
+                    return;
+                }
+
+                bool isCritical = string.Equals(conn.ThreatSeverity, "CRITICAL", StringComparison.OrdinalIgnoreCase)
+                    || reason.Contains("Rogue", StringComparison.OrdinalIgnoreCase)
+                    || reason.Contains("Critical", StringComparison.OrdinalIgnoreCase);
+                if (string.Equals(level, "Critical", StringComparison.OrdinalIgnoreCase) && !isCritical)
+                {
+                    return;
+                }
+
                 Dispatcher.Invoke(() =>
                 {
                     try
@@ -188,11 +206,40 @@ namespace Vortex
             {
                 try
                 {
+                    var appSettings = _db.GetAppSettings();
+
+                    // Apply telemetry silencer on boot if enabled
+                    if (appSettings.TelemetrySilencerOnBoot)
+                    {
+                        _ = Task.Run(() =>
+                        {
+                            try
+                            {
+                                _telemetryLockdown.ApplyCompleteLockdown();
+                            }
+                            catch { }
+                        });
+                    }
+
+                    // Sync restore point checkbox on Cleaner view
+                    if (ChkCreateRestorePoint != null)
+                    {
+                        ChkCreateRestorePoint.IsChecked = appSettings.AutoCreateRestorePoint;
+                    }
+
                     UpdateHeaderTelemetry();
                     PerformSystemHealthAudit();
                     await RefreshProcessesAsync();
-                    _ = CheckDashboardUpdatesAsync();
-                    ShowFloatingOrb();
+
+                    if (appSettings.WingetCheckOnStartup)
+                    {
+                        _ = CheckDashboardUpdatesAsync();
+                    }
+
+                    if (appSettings.LaunchOrbOnStartup)
+                    {
+                        ShowFloatingOrb();
+                    }
 
                     // Automatically ensure Windows Explorer right-click integration is active
                     try
@@ -416,7 +463,8 @@ namespace Vortex
                     int corners = 2; // DWMWCP_ROUND
                     DwmSetWindowAttribute(handle, DWMWA_WINDOW_CORNER_PREFERENCE, ref corners, sizeof(int));
 
-                    int backdropType = 3; // Acrylic
+                    var s = _db?.GetAppSettings();
+                    int backdropType = (s != null && s.BackdropEffect.Equals("Solid", StringComparison.OrdinalIgnoreCase)) ? 1 : 3;
                     DwmSetWindowAttribute(handle, DWMWA_SYSTEMBACKDROP_TYPE, ref backdropType, sizeof(int));
                 }
             }
@@ -532,6 +580,31 @@ namespace Vortex
                     if (topProc != null)
                     {
                         TxtOverviewTopProcess.Text = $"🔥 Top Consumer: {topProc.Name} ({topProc.MemoryString})";
+                    }
+                }
+
+                // Autonomous RAM auto-trimming heuristics
+                if (_db != null)
+                {
+                    var s = _db.GetAppSettings();
+                    if (s.AutoTrimRam && mem.loadPercent >= s.AutoTrimThresholdPercent)
+                    {
+                        if ((DateTime.UtcNow - _lastAutoTrimTime).TotalMinutes >= 5)
+                        {
+                            _lastAutoTrimTime = DateTime.UtcNow;
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    long trimmedBytes = _memOptimizer.OptimizeAllWorkingSets();
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        TxtStatusBar.Text = $"⚡ Auto-Trim Heuristic: Reclaimed {trimmedBytes / (1024.0 * 1024.0):F1} MB of working set RAM.";
+                                    });
+                                }
+                                catch { }
+                            });
+                        }
                     }
                 }
             }
@@ -3606,6 +3679,9 @@ namespace Vortex
                 TxtSysRamUsed.Text = $"{r.RamUsedBytes / (1024.0 * 1024 * 1024):F1} / {r.RamTotalBytes / (1024.0 * 1024 * 1024):F1} GB";
 
                 // Temperature alerts
+                var appSettings = _db?.GetAppSettings();
+                bool thermalAlerts = appSettings?.ThermalAlertsEnabled ?? true;
+
                 if (r.AnyCritical)
                 {
                     string alert = "";
@@ -3615,7 +3691,10 @@ namespace Vortex
                     if (r.MbTempC >= 80)  alert += $"MB {r.MbTempC:F0}°C  ";
                     TxtStatusBar.Text = $"🔴 CRITICAL TEMPERATURE: {alert.Trim()}";
 
-                    _trayService?.ShowBalloon("⚠️ Overheat Alert", $"Critical temperature detected: {alert.Trim()}", 3);
+                    if (thermalAlerts)
+                    {
+                        _trayService?.ShowBalloon("⚠️ Overheat Alert", $"Critical temperature detected: {alert.Trim()}", 3);
+                    }
                 }
                 else if (r.AnyWarning)
                 {
@@ -4366,27 +4445,35 @@ namespace Vortex
             {
                 var s = _db.GetAppSettings();
 
-                // Windows Startup
-                if (sender == ChkStartWithWindows && ChkStartWithWindows != null)
+                // Windows Startup & Minimized Sync
+                if (ChkStartWithWindows != null) s.StartWithWindows = ChkStartWithWindows.IsChecked == true;
+                if (ChkStartMinimized != null) s.StartMinimizedToTray = ChkStartMinimized.IsChecked == true;
+
+                if (sender == ChkStartWithWindows || sender == ChkStartMinimized)
                 {
-                    bool enable = ChkStartWithWindows.IsChecked == true;
-                    WindowsStartupHelper.SetRunOnStartup(enable);
-                    s.StartWithWindows = enable;
-                    TxtStatusBar.Text = enable ? "Vortex configured to start with Windows." : "Vortex removed from Windows startup.";
-                }
-                else
-                {
-                    if (ChkStartWithWindows != null) s.StartWithWindows = ChkStartWithWindows.IsChecked == true;
+                    WindowsStartupHelper.SetRunOnStartup(s.StartWithWindows, s.StartMinimizedToTray);
+                    if (sender == ChkStartWithWindows)
+                    {
+                        TxtStatusBar.Text = s.StartWithWindows ? "Vortex configured to start with Windows." : "Vortex removed from Windows startup.";
+                    }
+                    else
+                    {
+                        TxtStatusBar.Text = s.StartMinimizedToTray ? "Vortex configured to start docked silently in the system tray." : "Vortex will show main window on startup.";
+                    }
                 }
 
-                if (ChkStartMinimized != null) s.StartMinimizedToTray = ChkStartMinimized.IsChecked == true;
                 if (ChkCloseToTray != null) s.CloseToTray = ChkCloseToTray.IsChecked == true;
                 if (ChkLaunchOrbOnStartup != null) s.LaunchOrbOnStartup = ChkLaunchOrbOnStartup.IsChecked == true;
 
                 if (ChkAutoTrimRam != null) s.AutoTrimRam = ChkAutoTrimRam.IsChecked == true;
                 if (ChkThermalAlerts != null) s.ThermalAlertsEnabled = ChkThermalAlerts.IsChecked == true;
 
-                if (ChkAutoRestorePoint != null) s.AutoCreateRestorePoint = ChkAutoRestorePoint.IsChecked == true;
+                if (ChkAutoRestorePoint != null)
+                {
+                    s.AutoCreateRestorePoint = ChkAutoRestorePoint.IsChecked == true;
+                    if (ChkCreateRestorePoint != null) ChkCreateRestorePoint.IsChecked = s.AutoCreateRestorePoint;
+                }
+
                 if (ChkTelemetrySilencerBoot != null) s.TelemetrySilencerOnBoot = ChkTelemetrySilencerBoot.IsChecked == true;
                 if (ChkWingetCheckStartup != null) s.WingetCheckOnStartup = ChkWingetCheckStartup.IsChecked == true;
 
@@ -4396,6 +4483,19 @@ namespace Vortex
             {
                 TxtStatusBar.Text = $"Error saving setting: {ex.Message}";
             }
+        }
+
+        private void OnCreateRestorePointCleanerChecked(object sender, RoutedEventArgs e)
+        {
+            if (_db == null) return;
+            try
+            {
+                var s = _db.GetAppSettings();
+                s.AutoCreateRestorePoint = ChkCreateRestorePoint?.IsChecked == true;
+                _db.SaveAppSettings(s);
+                if (ChkAutoRestorePoint != null) ChkAutoRestorePoint.IsChecked = s.AutoCreateRestorePoint;
+            }
+            catch { }
         }
 
         private void OnAppSettingSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -4465,6 +4565,10 @@ namespace Vortex
                 var s = _db.GetAppSettings();
                 s.BackdropEffect = backdrop;
                 _db.SaveAppSettings(s);
+                if (_themeService != null)
+                {
+                    UpdateDwmBackdrop(_themeService.IsDarkMode);
+                }
                 TxtStatusBar.Text = $"Window backdrop set to {backdrop}.";
             }
         }

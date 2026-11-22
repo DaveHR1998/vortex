@@ -96,7 +96,33 @@ namespace Vortex
             {
                 var mainWindow = new MainWindow(e.Args);
                 MainWindow = mainWindow;
-                mainWindow.Show();
+
+                bool startMinimized = e.Args != null && e.Args.Any(a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
+                if (!startMinimized && e.Args != null && e.Args.Any(a => a.Equals("--startup", StringComparison.OrdinalIgnoreCase)))
+                {
+                    try
+                    {
+                        var db = new Vortex.Core.Database.DatabaseService();
+                        if (db.GetAppSettings().StartMinimizedToTray)
+                        {
+                            startMinimized = true;
+                        }
+                    }
+                    catch { }
+                }
+
+                if (startMinimized)
+                {
+                    mainWindow.WindowState = WindowState.Minimized;
+                    mainWindow.ShowInTaskbar = false;
+                    mainWindow.Show();
+                    mainWindow.Hide();
+                    mainWindow.ShowInTaskbar = true;
+                }
+                else
+                {
+                    mainWindow.Show();
+                }
 
                 // Start Named Pipe IPC Server to receive commands from Explorer context menu and subsequent instances
                 StartIpcServer(mainWindow);
