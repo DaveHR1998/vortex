@@ -87,18 +87,8 @@ namespace Vortex.Core.SystemManagement
             // Pre-clean any stale installer files or locks for this package
             CleanupPackageTemp(packageId);
 
-            // If Chrome is currently running, inform the user so they know to close Chrome if file locks occur
-            if (packageId.Contains("Chrome", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    if (Process.GetProcessesByName("chrome").Length > 0)
-                    {
-                        outputProgress.Report("  ⚠️ [NOTE] Google Chrome is currently open. If the installer encounters file locks, please close Chrome tabs.");
-                    }
-                }
-                catch { }
-            }
+            // Gracefully close any active instances of the target application to eliminate file locks
+            GracefullyCloseAppProcesses(packageId, outputProgress);
 
             var session = new PackageUpdateSession { PackageId = packageId };
 
@@ -114,6 +104,20 @@ namespace Vortex.Core.SystemManagement
             try
             {
                 success = await RunWingetStreamAsync(args, session, outputProgress, downloadProgress, cancellationToken);
+
+                // Auto-Retry on network drop, file lock, or unexpected exit code (e.g. 0x80072f78 / InternetReadFile failure)
+                if (!success && !cancellationToken.IsCancellationRequested)
+                {
+                    outputProgress.Report("  ⚠️ Update encountered an error or network interruption. Retrying with clean cache (Attempt 2/2)...");
+                    CleanupPackageTemp(packageId);
+                    GracefullyCloseAppProcesses(packageId, outputProgress);
+                    await Task.Delay(2000, cancellationToken);
+                    success = await RunWingetStreamAsync(args, session, outputProgress, downloadProgress, cancellationToken);
+                    if (success)
+                    {
+                        outputProgress.Report("  ✓ Update succeeded on retry.");
+                    }
+                }
             }
             finally
             {
@@ -326,6 +330,93 @@ namespace Vortex.Core.SystemManagement
                 }
             }
             catch { }
+        }
+
+        /// <summary>
+        /// Identifies running processes corresponding to the package being updated and gently closes them
+        /// (CloseMainWindow first, then terminating stubborn background daemons) to eliminate Windows file locks.
+        /// </summary>
+        public static void GracefullyCloseAppProcesses(string packageId, IProgress<string> outputProgress)
+        {
+            var targetProcessNames = GetProcessNamesForPackage(packageId);
+            if (targetProcessNames.Count == 0) return;
+
+            foreach (var procName in targetProcessNames)
+            {
+                try
+                {
+                    var procs = Process.GetProcessesByName(procName);
+                    if (procs.Length == 0) continue;
+
+                    outputProgress.Report($"  🔒 Closing {procName} to release file locks before updating...");
+
+                    // 1. Send WM_CLOSE to top-level windows for graceful session/tab save
+                    foreach (var p in procs)
+                    {
+                        try { p.CloseMainWindow(); } catch { }
+                    }
+
+                    // Brief wait for application to save state and exit gracefully
+                    Thread.Sleep(1500);
+
+                    // 2. Terminate any lingering background daemon workers
+                    var remaining = Process.GetProcessesByName(procName);
+                    foreach (var p in remaining)
+                    {
+                        try
+                        {
+                            p.Kill();
+                            p.WaitForExit(1000);
+                        }
+                        catch { }
+                    }
+
+                    outputProgress.Report($"  ✓ {procName} closed successfully.");
+                }
+                catch { }
+            }
+        }
+
+        private static List<string> GetProcessNamesForPackage(string packageId)
+        {
+            var list = new List<string>();
+            string lower = packageId.ToLowerInvariant();
+
+            if (lower.Contains("chrome")) list.Add("chrome");
+            if (lower.Contains("edge")) list.Add("msedge");
+            if (lower.Contains("firefox")) list.Add("firefox");
+            if (lower.Contains("brave")) list.Add("brave");
+            if (lower.Contains("opera")) list.Add("opera");
+            if (lower.Contains("discord")) list.Add("Discord");
+            if (lower.Contains("spotify")) list.Add("Spotify");
+            if (lower.Contains("telegram")) list.Add("Telegram");
+            if (lower.Contains("slack")) list.Add("slack");
+            if (lower.Contains("vscode") || lower.Contains("visualstudiocode")) list.Add("Code");
+            if (lower.Contains("notepad++")) list.Add("notepad++");
+            if (lower.Contains("steam")) list.Add("steam");
+            if (lower.Contains("vlc")) list.Add("vlc");
+            if (lower.Contains("postgre") || lower.Contains("pgadmin")) { list.Add("pgAdmin4"); list.Add("postgres"); }
+            if (lower.Contains("git")) { list.Add("git"); list.Add("git-bash"); }
+
+            // Dynamic heuristic for any "Vendor.AppName" format
+            string[] parts = packageId.Split('.');
+            if (parts.Length > 1)
+            {
+                string candidate = parts[parts.Length - 1].ToLowerInvariant();
+                if (!list.Contains(candidate) && candidate.Length >= 3)
+                {
+                    try
+                    {
+                        if (Process.GetProcessesByName(candidate).Length > 0)
+                        {
+                            list.Add(candidate);
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            return list;
         }
 
         public static IEnumerable<string> GetWingetTempDirectories()

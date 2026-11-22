@@ -67,7 +67,7 @@ $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE="1"
 $env:DOTNET_CLI_HOME=Join-Path $rootDir ".cli"
 $env:APPDATA=Join-Path $rootDir ".cli\AppData\Roaming"
 
-& dotnet publish "$rootDir\Vortex.csproj" -c Release -r win-x64 --self-contained false -o "$appStaging" -p:NuGetAudit=false
+& dotnet publish "$rootDir\Vortex.csproj" -c Release -r win-x64 --self-contained true -o "$appStaging" -p:NuGetAudit=false
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE"
 }
