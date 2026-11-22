@@ -17,7 +17,64 @@
 
 [**Technical Documentation**](TECHNICAL_DOCUMENTATION.md) • [**Download Setup (v2.0.0)**](Release_Installer/VortexSetup.exe) • [**Release Notes**](https://github.com/DaveHR1998/vortex/releases/tag/v2.0.0)
 
+<br/><br/>
+
+<!-- Primary Hero Dashboard Preview -->
+<img src="assets/dashboard.png" alt="Vortex System Guardian Master Dashboard" width="920" />
+
 </div>
+
+---
+
+## 📸 Interactive Module Showcase
+
+<details open>
+  <summary><b>🔒 Zero-Trust AES-256 Vault & Folder Camouflage</b> <i>(Click to toggle)</i></summary>
+  <br/>
+  <p align="center">
+    <img src="assets/vault.png" alt="Zero-Trust Vault & Folder Guard" width="900" />
+  </p>
+</details>
+
+<details>
+  <summary><b>🌐 Live Rogue Socket & Network Intrusion Shield</b> <i>(Click to toggle)</i></summary>
+  <br/>
+  <p align="center">
+    <img src="assets/network.png" alt="Rogue Socket & Network Intrusion Shield" width="900" />
+  </p>
+</details>
+
+<details>
+  <summary><b>🚀 Software Updater & Uninstaller Engine</b> <i>(Click to toggle)</i></summary>
+  <br/>
+  <p align="center">
+    <img src="assets/updater.png" alt="Software Updater & Uninstaller" width="900" />
+  </p>
+</details>
+
+<details>
+  <summary><b>🧹 System Sweeper & Residual Junk Cleaner</b> <i>(Click to toggle)</i></summary>
+  <br/>
+  <p align="center">
+    <img src="assets/cleaner.png" alt="System Sweeper & Residual Cleaner" width="900" />
+  </p>
+</details>
+
+<details>
+  <summary><b>🌙 Deep Focus Mode & Floating Cyberpunk Orb</b> <i>(Click to toggle)</i></summary>
+  <br/>
+  <p align="center">
+    <img src="assets/focus_orb.jpg" alt="Deep Focus Mode & Cyberpunk Orb" width="900" />
+  </p>
+</details>
+
+<details>
+  <summary><b>⚡ Polished Deep Space Offline Setup Wizard</b> <i>(Click to toggle)</i></summary>
+  <br/>
+  <p align="center">
+    <img src="assets/installer.png" alt="Vortex Setup Wizard" width="580" />
+  </p>
+</details>
 
 ---
 
