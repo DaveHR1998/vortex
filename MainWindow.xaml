@@ -25,9 +25,9 @@
             <RowDefinition Height="30" />
         </Grid.RowDefinitions>
 
-        <!-- 1. Integrated Title Bar -->
-        <Border Grid.Row="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
-            <Grid Margin="16,0,10,0">
+        <!-- 1. Integrated Title Bar (Proton Seamless Atmospheric Flow) -->
+        <Border Grid.Row="0" Background="Transparent" BorderThickness="0">
+            <Grid Margin="18,0,12,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -86,18 +86,20 @@
             </Grid>
         </Border>
 
-        <!-- 2. Main Body: Proton Frosted Sidebar + Content Area -->
+        <!-- 2. Main Body: Floating Inset Panels (Sidebar + Content Card + Proton Quick Dock) -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <!-- Frosted Sidebar Navigation -->
+                <!-- Floating Sidebar Navigation -->
                 <ColumnDefinition Width="240" />
-                <!-- Dynamic Content Area -->
+                <!-- Floating Dynamic Content Card -->
                 <ColumnDefinition Width="*" />
+                <!-- Proton Floating Quick Dock Rail -->
+                <ColumnDefinition Width="74" />
             </Grid.ColumnDefinitions>
 
-            <!-- Frosted Sidebar (Proton Style) -->
-            <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
-                <DockPanel>
+            <!-- Frosted Floating Sidebar (Proton Style) -->
+            <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Margin="14,4,6,10">
+                <DockPanel Margin="2">
                     <!-- Search Box at Top of Sidebar (Spotlight Quick Launcher) -->
                     <Border DockPanel.Dock="Top" Margin="12,12,12,8">
                         <Grid>
@@ -298,8 +300,9 @@
                 </DockPanel>
             </Border>
 
-            <!-- Dynamic Content Area -->
-            <Grid Grid.Column="1" Margin="22,18,22,18">
+            <!-- Floating Dynamic Content Card (Proton Inset Island) -->
+            <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Margin="6,4,6,10" ClipToBounds="True">
+                <Grid Margin="18,16,18,16">
 
                 <!-- TAB 0: Hero Overview Dashboard -->
                 <ScrollViewer x:Name="PanelHome" Visibility="Visible" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -2581,11 +2584,84 @@
                     </Border>
                 </Grid>
 
-            </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Proton Floating Right Quick Dock Rail -->
+            <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Margin="6,4,14,10">
+                <DockPanel Margin="6,12,6,12">
+                    <!-- Top Status Badge (Proton NetShield Style) -->
+                    <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource AccentGlowBrush}" BorderThickness="1" CornerRadius="8" Padding="2,4" Margin="2,0,2,8">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="SHIELD" Foreground="{DynamicResource AccentGlowBrush}" FontSize="8" FontWeight="Bold" HorizontalAlignment="Center" />
+                            <TextBlock Text="ON" Foreground="{DynamicResource StatusSafeBrush}" FontSize="10" FontWeight="ExtraBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bottom Controls -->
+                    <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
+                        <Button Style="{StaticResource ProtonQuickDockButton}" Click="OnToggleThemeClick" ToolTip="Toggle Theme (Proton Dark / Mint Light)">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="🌓" FontSize="17" HorizontalAlignment="Center" />
+                                <TextBlock Text="Theme" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource ProtonQuickDockButton}" Click="OnToggleOrbClick" ToolTip="Toggle Desktop Floating Orb">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="🔮" FontSize="17" HorizontalAlignment="Center" />
+                                <TextBlock Text="Orb" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Quick Dock Action Rail Buttons -->
+                    <StackPanel VerticalAlignment="Center">
+                        <!-- 1. Turbo Boost -->
+                        <Button Style="{StaticResource ProtonQuickDockButton}" Click="OnTurboBoostClick" ToolTip="Instant Turbo Boost: Reclaim RAM working sets across all running apps">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="⚡" FontSize="18" HorizontalAlignment="Center" />
+                                <TextBlock Text="Turbo" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 2. Zero-Trust Vault -->
+                        <Button Style="{StaticResource ProtonQuickDockButton}" Click="OnDockVaultClick" ToolTip="Data Shield &amp; Vault: Instant secure folder encryption">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="🔒" FontSize="18" HorizontalAlignment="Center" />
+                                <TextBlock Text="Vault" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 3. USB DLP Protection -->
+                        <Button Style="{StaticResource ProtonQuickDockButton}" Click="OnDockUsbClick" ToolTip="USB Data Leak Prevention: Block mass storage data exfiltration">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="🛡️" FontSize="18" HorizontalAlignment="Center" />
+                                <TextBlock Text="USB DLP" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 4. Deep Focus Mode -->
+                        <Button Style="{StaticResource ProtonQuickDockButton}" Click="OnDockFocusClick" ToolTip="Deep Focus Mode: Suspend background bloatware and silence distractions">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="🎯" FontSize="18" HorizontalAlignment="Center" />
+                                <TextBlock Text="Focus" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 5. App Privacy & Threat Shield -->
+                        <Button Style="{StaticResource ProtonQuickDockButton}" Click="OnDockShieldClick" ToolTip="Threat Shield: Inspect firewall sockets and block telemetry beacons">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="👁️" FontSize="18" HorizontalAlignment="Center" />
+                                <TextBlock Text="Shield" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
         </Grid>
 
-        <!-- 3. Slim Bottom Status Bar -->
-        <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,0">
+        <!-- 3. Floating Bottom Status Bar (Proton Clean Status Pill) -->
+        <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Margin="14,0,14,8" Padding="16,4">
             <DockPanel VerticalAlignment="Center">
                 <TextBlock x:Name="TxtStatusBar" Text="Vortex Fluent Engine Ready • Administrator Elevated" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
             </DockPanel>

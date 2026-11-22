@@ -22,62 +22,64 @@ namespace Vortex.Core.SystemIntegration
 
             if (darkMode)
             {
-                // Proton-Inspired Matte Charcoal + Ambient Top Crimson Glow
-                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0x18, 0x18, 0x1C));
+                // Proton-Inspired Dark Emerald-Teal Aurora + Obsidian Base
+                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0x07, 0x0E, 0x11));
                 
                 var darkAtmosphere = new LinearGradientBrush
                 {
                     StartPoint = new Point(0.5, 0),
                     EndPoint = new Point(0.5, 1)
                 };
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x3D, 0x1B, 0x2A), 0.0));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x24, 0x1A, 0x24), 0.35));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x18, 0x18, 0x1C), 0.85));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x0B, 0x30, 0x29), 0.0));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x09, 0x24, 0x20), 0.30));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x08, 0x16, 0x19), 0.70));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x06, 0x0C, 0x0E), 1.0));
                 res["AtmosphericGradient"] = darkAtmosphere;
 
-                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0xEA, 0x20, 0x1A, 0x26));
-                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0xF0, 0x2A, 0x22, 0x33));
-                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0xB0, 0x24, 0x1D, 0x2D));
-                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0x60, 0x55, 0x46, 0x66));
-                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0xA0, 0x7E, 0x66, 0x99));
+                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0xEE, 0x0E, 0x18, 0x1C));
+                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0xF2, 0x14, 0x23, 0x28));
+                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0xB0, 0x0F, 0x1C, 0x20));
+                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0x3D, 0x29, 0x4E, 0x48));
+                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x85, 0x3D, 0x74, 0x6B));
 
-                res["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0xF8, 0xF9, 0xFD));
-                res["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(0xA6, 0x9E, 0xB0));
-                res["TextMutedBrush"] = new SolidColorBrush(Color.FromRgb(0x71, 0x69, 0x7C));
+                res["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0xF4, 0xFA, 0xF8));
+                res["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(0x8F, 0xA8, 0xA4));
+                res["TextMutedBrush"] = new SolidColorBrush(Color.FromRgb(0x51, 0x70, 0x6B));
 
-                // Proton Violet & Turquoise
+                // Proton Signature Electric Violet & Mint
                 res["AccentPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0x6D, 0x4A, 0xFF));
                 res["AccentGlowBrush"] = new SolidColorBrush(Color.FromRgb(0x00, 0xE5, 0x99));
                 res["StatusSafeBrush"] = new SolidColorBrush(Color.FromRgb(0x00, 0xE5, 0x99));
             }
             else
             {
-                // Clean Modern Light Mode
-                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0xF3, 0xF4, 0xF8));
+                // Proton-Inspired Luminous Mint Mist & Pearl Light Mode
+                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0xEB, 0xF7, 0xF4));
 
                 var lightAtmosphere = new LinearGradientBrush
                 {
                     StartPoint = new Point(0.5, 0),
                     EndPoint = new Point(0.5, 1)
                 };
-                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xEB, 0xE7, 0xF8), 0.0));
-                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xF3, 0xF4, 0xF8), 0.6));
+                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xA5, 0xEF, 0xE0), 0.0));
+                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xD8, 0xF5, 0xED), 0.40));
+                lightAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0xEE, 0xF9, 0xF6), 1.0));
                 res["AtmosphericGradient"] = lightAtmosphere;
 
-                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0xF5, 0xFF, 0xFF, 0xFF));
+                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0xF4, 0xFF, 0xFF, 0xFF));
                 res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
-                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0xE0, 0xF9, 0xFA, 0xFC));
-                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0xE2, 0xE8, 0xF0));
-                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0xCB, 0xD5, 0xE1));
+                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0xE4, 0xF6, 0xF2, 0xF8));
+                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0xCD, 0xEC, 0xE4));
+                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0xFF, 0x9F, 0xE2, 0xD3));
 
-                res["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0x0F, 0x17, 0x2A));
-                res["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(0x47, 0x55, 0x69));
-                res["TextMutedBrush"] = new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xB8));
+                res["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0x09, 0x26, 0x22));
+                res["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(0x37, 0x5E, 0x58));
+                res["TextMutedBrush"] = new SolidColorBrush(Color.FromRgb(0x6C, 0x94, 0x8D));
 
-                // Vibrant Electric Indigo in Light Mode
-                res["AccentPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0x5E, 0x3D, 0xFA));
-                res["AccentGlowBrush"] = new SolidColorBrush(Color.FromRgb(0x05, 0x96, 0x69));
-                res["StatusSafeBrush"] = new SolidColorBrush(Color.FromRgb(0x10, 0xB9, 0x81));
+                // Proton Violet & Emerald in Light Mode
+                res["AccentPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0x6D, 0x4A, 0xFF));
+                res["AccentGlowBrush"] = new SolidColorBrush(Color.FromRgb(0x00, 0xB7, 0x7D));
+                res["StatusSafeBrush"] = new SolidColorBrush(Color.FromRgb(0x00, 0xA8, 0x6B));
             }
 
             ThemeChanged?.Invoke(darkMode);

@@ -633,6 +633,19 @@ namespace Vortex
         private void OnCardUpdaterClick(object sender, MouseButtonEventArgs e) => NavUpdater.IsChecked = true;
         private void OnSystemHealthAuditClick(object sender, RoutedEventArgs e) => PerformSystemHealthAudit();
 
+        private void OnDockVaultClick(object sender, RoutedEventArgs e) => NavVault.IsChecked = true;
+        private void OnDockUsbClick(object sender, RoutedEventArgs e)
+        {
+            NavVault.IsChecked = true;
+            if (SubTabVaultUsb != null) SubTabVaultUsb.IsChecked = true;
+        }
+        private void OnDockFocusClick(object sender, RoutedEventArgs e) => NavFocus.IsChecked = true;
+        private void OnDockShieldClick(object sender, RoutedEventArgs e)
+        {
+            NavNetwork.IsChecked = true;
+            if (SubTabNetDiscover != null) SubTabNetDiscover.IsChecked = true;
+        }
+
         #region Window Controls
         private void OnMinimizeClick(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
