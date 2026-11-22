@@ -32,15 +32,15 @@
   <summary><b>🔒 Zero-Trust AES-256 Vault & Folder Camouflage</b> <i>(Click to toggle)</i></summary>
   <br/>
   <p align="center">
-    <img src="assets/vault.png" alt="Zero-Trust Vault & Folder Guard" width="900" />
+    <img src="assets/data%20shield%20and%20vault.png" alt="Data Shield & Vault" width="900" />
   </p>
 </details>
 
 <details>
-  <summary><b>🌐 Live Rogue Socket & Network Intrusion Shield</b> <i>(Click to toggle)</i></summary>
+  <summary><b>🌐 Live Rogue Socket & Network Threat Shield</b> <i>(Click to toggle)</i></summary>
   <br/>
   <p align="center">
-    <img src="assets/network.png" alt="Rogue Socket & Network Intrusion Shield" width="900" />
+    <img src="assets/network%20and%20threat%20shield.png" alt="Network & Threat Shield" width="900" />
   </p>
 </details>
 
@@ -48,7 +48,7 @@
   <summary><b>🚀 Software Updater & Uninstaller Engine</b> <i>(Click to toggle)</i></summary>
   <br/>
   <p align="center">
-    <img src="assets/updater.png" alt="Software Updater & Uninstaller" width="900" />
+    <img src="assets/software%20updater%20and%20uninstaller.png" alt="Software Updater & Uninstaller" width="900" />
   </p>
 </details>
 
@@ -56,23 +56,7 @@
   <summary><b>🧹 System Sweeper & Residual Junk Cleaner</b> <i>(Click to toggle)</i></summary>
   <br/>
   <p align="center">
-    <img src="assets/cleaner.png" alt="System Sweeper & Residual Cleaner" width="900" />
-  </p>
-</details>
-
-<details>
-  <summary><b>🌙 Deep Focus Mode & Floating Cyberpunk Orb</b> <i>(Click to toggle)</i></summary>
-  <br/>
-  <p align="center">
-    <img src="assets/focus_orb.jpg" alt="Deep Focus Mode & Cyberpunk Orb" width="900" />
-  </p>
-</details>
-
-<details>
-  <summary><b>⚡ Polished Deep Space Offline Setup Wizard</b> <i>(Click to toggle)</i></summary>
-  <br/>
-  <p align="center">
-    <img src="assets/installer.png" alt="Vortex Setup Wizard" width="580" />
+    <img src="assets/system%20sweeper.png" alt="System Sweeper" width="900" />
   </p>
 </details>
 
