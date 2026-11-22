@@ -1,39 +1,40 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Atmospheric Gradient (Proton-Style High Dynamic Range Aurora Spotlight into Deep Obsidian Void) -->
+    <!-- Atmospheric Gradient (Velvety Indigo Aura into Deep #16161D Void) -->
     <LinearGradientBrush x:Key="AtmosphericGradient" StartPoint="0.38,0" EndPoint="0.62,1">
-        <GradientStop Color="#2C1250" Offset="0.0" />
-        <GradientStop Color="#122A50" Offset="0.20" />
-        <GradientStop Color="#0B152A" Offset="0.52" />
-        <GradientStop Color="#060910" Offset="1.0" />
+        <GradientStop Color="#2A2649" Offset="0.0" />
+        <GradientStop Color="#1F1E31" Offset="0.25" />
+        <GradientStop Color="#181824" Offset="0.60" />
+        <GradientStop Color="#16161D" Offset="1.0" />
     </LinearGradientBrush>
 
-    <!-- Base Theme Brushes (Proton-Style Deep Obsidian Glass Cards with Crisp Contrast) -->
-    <SolidColorBrush x:Key="CanvasBgBrush" Color="#060910" />
-    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#EE0C111C" />
-    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#F4121929" />
-    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#C00E1422" />
-    <SolidColorBrush x:Key="BorderBrush" Color="#304560A0" />
-    <SolidColorBrush x:Key="BorderHoverBrush" Color="#705A7CE0" />
-    <SolidColorBrush x:Key="AccentPrimaryBrush" Color="#6D4AFF" />
-    <SolidColorBrush x:Key="AccentGlowBrush" Color="#00A3FF" />
-    <SolidColorBrush x:Key="StatusSafeBrush" Color="#00D2FF" />
-    <SolidColorBrush x:Key="StatusWarningBrush" Color="#F59E0B" />
+    <!-- Base Theme Brushes (Calibrated to User Theme Palette) -->
+    <SolidColorBrush x:Key="CanvasBgBrush" Color="#16161D" />
+    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#EE252537" />
+    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#F4393A56" />
+    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#C0252537" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#386C6D93" />
+    <SolidColorBrush x:Key="BorderHoverBrush" Color="#806C6D93" />
+    <SolidColorBrush x:Key="AccentPrimaryBrush" Color="#6366F1" />
+    <SolidColorBrush x:Key="AccentGlowBrush" Color="#818CF8" />
+    <SolidColorBrush x:Key="AccentSecondaryBrush" Color="#E0DD52" />
+    <SolidColorBrush x:Key="StatusSafeBrush" Color="#10B981" />
+    <SolidColorBrush x:Key="StatusWarningBrush" Color="#E0DD52" />
     <SolidColorBrush x:Key="StatusDangerBrush" Color="#EF4444" />
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F8FAFD" />
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#94A3C0" />
-    <SolidColorBrush x:Key="TextMutedBrush" Color="#586580" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E3E3E8" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9FA0C3" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#6C6D93" />
 
     <!-- Sleek ScrollBar Brushes -->
-    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#50354675" />
-    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#904D65A8" />
-    <SolidColorBrush x:Key="ScrollBarThumbDragBrush" Color="#00A3FF" />
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#506C6D93" />
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#906C6D93" />
+    <SolidColorBrush x:Key="ScrollBarThumbDragBrush" Color="#6366F1" />
 
     <!-- Legacy / Installer Aliases -->
-    <SolidColorBrush x:Key="BgCardBrush" Color="#EE0C111C" />
-    <SolidColorBrush x:Key="BorderDarkBrush" Color="#304560A0" />
-    <SolidColorBrush x:Key="AccentCyanBrush" Color="#00A3FF" />
+    <SolidColorBrush x:Key="BgCardBrush" Color="#EE252537" />
+    <SolidColorBrush x:Key="BorderDarkBrush" Color="#386C6D93" />
+    <SolidColorBrush x:Key="AccentCyanBrush" Color="#6366F1" />
 
     <!-- Typography Styles -->
     <Style x:Key="TitleHeaderStyle" TargetType="TextBlock">
@@ -159,7 +160,7 @@
     <!-- Custom Fluent ProgressBar (Brightened High-Contrast Track) -->
     <Style TargetType="ProgressBar">
         <Setter Property="Height" Value="7" />
-        <Setter Property="Background" Value="#25324E" />
+        <Setter Property="Background" Value="#393A56" />
         <Setter Property="Foreground" Value="{DynamicResource AccentGlowBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
@@ -206,10 +207,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#7F5EFF" />
+                            <Setter TargetName="border" Property="Background" Value="#7577F6" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#5530EA" />
+                            <Setter TargetName="border" Property="Background" Value="#4F46E5" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="border" Property="Opacity" Value="0.4" />

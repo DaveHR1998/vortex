@@ -433,7 +433,7 @@
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewCpuLoad" Text="12%" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewCpu" Value="12" Maximum="100" Height="7" Background="#25324E" Foreground="{DynamicResource StatusSafeBrush}" Margin="0,0,0,10" />
+                                    <ProgressBar x:Name="PbOverviewCpu" Value="12" Maximum="100" Height="7" Background="#393A56" Foreground="{DynamicResource StatusSafeBrush}" Margin="0,0,0,10" />
 
                                     <!-- Memory Load -->
                                     <Grid Margin="0,0,0,6">
@@ -443,7 +443,7 @@
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewRamLoad" Text="48% (7.6 / 16 GB)" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="7" Background="#25324E" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
+                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="7" Background="#393A56" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
 
                                     <!-- Primary Drive (C:) -->
                                     <Grid Margin="0,0,0,6">
@@ -453,7 +453,7 @@
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewDiskLoad" Text="45% Used" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewDisk" Value="45" Maximum="100" Height="7" Background="#25324E" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
+                                    <ProgressBar x:Name="PbOverviewDisk" Value="45" Maximum="100" Height="7" Background="#393A56" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
 
                                     <!-- System Uptime & Power Scheme -->
                                     <Grid Margin="0,2,0,0">
