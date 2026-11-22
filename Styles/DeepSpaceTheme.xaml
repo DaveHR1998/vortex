@@ -13,9 +13,9 @@
     <SolidColorBrush x:Key="CanvasBgBrush" Color="#16161D" />
     <SolidColorBrush x:Key="SidebarGlassBrush" Color="#70252537" />
     <SolidColorBrush x:Key="MainAreaGlassBrush" Color="#58252537" />
-    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#68252537" />
-    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#DD393A56" />
-    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#40252537" />
+    <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#252537" />
+    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#393A56" />
+    <SolidColorBrush x:Key="SurfaceSubtleBrush" Color="#80252537" />
     <SolidColorBrush x:Key="BorderBrush" Color="#386C6D93" />
     <SolidColorBrush x:Key="BorderHoverBrush" Color="#806C6D93" />
     <SolidColorBrush x:Key="AccentPrimaryBrush" Color="#6366F1" />
