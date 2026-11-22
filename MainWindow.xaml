@@ -194,6 +194,12 @@
                                 <TextBlock Text="Audit History &amp; Logs" />
                             </StackPanel>
                         </RadioButton>
+                        <RadioButton x:Name="NavSettings" GroupName="MainNav" Style="{StaticResource FluentNavItem}" Checked="OnNavSelectionChanged">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚙️" FontSize="14" Margin="0,0,10,0" />
+                                <TextBlock Text="Settings &amp; Preferences" />
+                            </StackPanel>
+                        </RadioButton>
                     </StackPanel>
 
                     <!-- Navigation Items List (GroupName="MainNav") -->
@@ -2576,6 +2582,362 @@
                         </ListView>
                     </Border>
                 </Grid>
+
+                <!-- TAB 14: Settings & Preferences Hub -->
+                <ScrollViewer x:Name="PanelSettings" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,0,6,20">
+                        <!-- Header Banner -->
+                        <DockPanel Margin="0,0,0,16">
+                            <StackPanel DockPanel.Dock="Left">
+                                <TextBlock Text="Settings &amp; Preferences" Style="{StaticResource TitleHeaderStyle}" />
+                                <TextBlock Text="Configure Windows boot integration, autonomous heuristics, zero-trust vault, and maintenance safeguards." 
+                                           Style="{StaticResource SubtitleHeaderStyle}" Margin="0,3,0,0" />
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button Style="{StaticResource VortexSecondaryButton}" Content="📦 Export Diagnostics (.json)" Click="OnExportDiagnosticsClick" Margin="0,0,8,0" Height="32" Padding="12,0" ToolTip="Export comprehensive system and audit diagnostic bundle" />
+                                <Button Style="{StaticResource VortexDangerButton}" Content="🔄 Reset to Defaults" Click="OnFactoryResetClick" Height="32" Padding="12,0" ToolTip="Reset all Vortex settings back to factory configuration" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Card 1: General & Windows System Integration -->
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="🚀" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="General &amp; Windows Boot Behavior" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Setting: Start with Windows -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Start Vortex on Windows Logon" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Automatically launches Vortex Guardian when you log into your Windows user account." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkStartWithWindows" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Start Minimized to Tray -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Start Minimized to System Tray" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Launches silently into background without opening the main window on boot." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkStartMinimized" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Close to Tray -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Close Button (✕) Minimizes to Tray" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Keeps real-time telemetry defense active in background tray when window is closed." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkCloseToTray" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Launch Floating Orb on Boot -->
+                                <DockPanel Margin="0,4,0,4">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Launch Desktop Floating Orb" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Automatically spawns the translucent desktop telemetry pill widget." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkLaunchOrbOnStartup" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Appearance & Personalization -->
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="🎨" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Appearance &amp; Personalization" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Setting: Theme Mode -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Application Theme" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Switch between Deep Space Obsidian (#16161D) and Fluent Polar White (#EEF2F8)." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="CmbThemeMode" Width="180" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="OnThemeModeSelectionChanged">
+                                        <ComboBoxItem Content="🌙 Deep Space Dark" Tag="Dark" IsSelected="True" />
+                                        <ComboBoxItem Content="☀️ Fluent Polar Light" Tag="Light" />
+                                    </ComboBox>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Window Backdrop Effect -->
+                                <DockPanel Margin="0,4,0,4">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Window Glass Backdrop" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Choose between Windows 11 Acrylic blur or solid high-performance background." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="CmbBackdropEffect" Width="180" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="OnBackdropSelectionChanged">
+                                        <ComboBoxItem Content="🪟 Windows 11 Acrylic" Tag="Acrylic" IsSelected="True" />
+                                        <ComboBoxItem Content="⚡ Solid High-Performance" Tag="Solid" />
+                                    </ComboBox>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: Autonomous Performance & Hardware Heuristics -->
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="⚡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Autonomous Memory Optimization &amp; Heuristics" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Setting: Auto-Trim Memory -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Autonomous Turbo Boost (Auto-Trim RAM)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Automatically flushes working sets and standby pools when system RAM exceeds threshold." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkAutoTrimRam" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Auto-Trim Threshold -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Autonomous Trim Threshold" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Trigger memory reclaim when utilization reaches or exceeds this percentage." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="CmbAutoTrimThreshold" Width="180" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="OnAppSettingSelectionChanged">
+                                        <ComboBoxItem Content="80% RAM Load" Tag="80" />
+                                        <ComboBoxItem Content="85% RAM Load (Recommended)" Tag="85" IsSelected="True" />
+                                        <ComboBoxItem Content="90% RAM Load (Heavy Gaming)" Tag="90" />
+                                    </ComboBox>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Telemetry Polling Rate -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Hardware Telemetry Refresh Interval" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Balancing real-time hardware responsiveness with zero CPU overhead." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="CmbTelemetryPolling" Width="180" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="OnAppSettingSelectionChanged">
+                                        <ComboBoxItem Content="⏱️ 1 Second (High Precision)" Tag="1" />
+                                        <ComboBoxItem Content="⏱️ 2 Seconds (Balanced)" Tag="2" IsSelected="True" />
+                                        <ComboBoxItem Content="⏱️ 5 Seconds (Power Saver)" Tag="5" />
+                                    </ComboBox>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Overheat & Thermal Alerts -->
+                                <DockPanel Margin="0,4,0,4">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Critical Hardware Overheat &amp; Load Alerts" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Notify via system tray when CPU/GPU temperatures exceed safety boundaries." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkThermalAlerts" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Zero-Trust Security & Vault Policies -->
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="🛡️" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Zero-Trust Vault &amp; Physical DLP Policies" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Setting: Auto-Lock on Win+L -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Auto-Lock All Vaults on Windows Lock (Win+L)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Instantly zeroizes memory keys and seals all encrypted folders when workstation locks." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkSettingsVaultScreenLock" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnSettingsVaultScreenLockChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Inactivity Auto-Lock -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Inactivity Auto-Lock Timeout" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Automatically seal containers when no mouse or keyboard input is detected." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="CmbSettingsVaultIdle" Width="180" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="OnSettingsVaultIdleChanged">
+                                        <ComboBoxItem Content="Disabled (Manual Only)" Tag="0" />
+                                        <ComboBoxItem Content="5 Minutes" Tag="5" />
+                                        <ComboBoxItem Content="15 Minutes (Default)" Tag="15" IsSelected="True" />
+                                        <ComboBoxItem Content="30 Minutes" Tag="30" />
+                                        <ComboBoxItem Content="60 Minutes" Tag="60" />
+                                    </ComboBox>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Windows Explorer Context Menu -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Windows File Explorer Context Menu" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Integrate 'Lock / Unlock with Vortex' into Windows Explorer right-click menu." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkSettingsVaultContextMenu" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnSettingsVaultContextMenuChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: USB Write Protection -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Removable Media Write-Block (USB DLP)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Enforces kernel Read-Only protection on external flash drives to block data theft." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkSettingsUsbDlp" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnSettingsUsbDlpChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,10" />
+
+                                <!-- Vault Authentication CTA Row -->
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="🔑 Change Master Password" Click="OnChangeMasterPasswordClick" Margin="0,0,8,0" Height="32" />
+                                    <Button Style="{StaticResource VortexSecondaryButton}" Content="📜 View Recovery Key" Click="OnViewRecoveryKeyClick" Height="32" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 5: System Sweeper & Recovery Safeguards -->
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="🧹" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="System Sweeper &amp; Recovery Safeguards" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Setting: Auto Create Restore Point -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Automatic Windows System Restore Point" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Creates a Windows System Restore Point before performing deep clean or registry repairs." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkAutoRestorePoint" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Quarantine Retention -->
+                                <DockPanel Margin="0,4,0,4">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Quarantine Retention Lifespan" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Retains quarantined registry keys and residual caches before permanent purging." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="CmbQuarantineRetention" Width="180" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="OnAppSettingSelectionChanged">
+                                        <ComboBoxItem Content="7 Days" Tag="7" />
+                                        <ComboBoxItem Content="14 Days (Recommended)" Tag="14" IsSelected="True" />
+                                        <ComboBoxItem Content="30 Days" Tag="30" />
+                                    </ComboBox>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 6: Network Intrusion & Threat Defense -->
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="🌐" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Network Intrusion &amp; OS Privacy Defense" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Setting: Intrusion Notification Level -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Socket Intrusion Notification Level" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Controls frequency of desktop balloon popups when suspicious sockets are quarantined." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="CmbIntrusionNotification" Width="180" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="OnAppSettingSelectionChanged">
+                                        <ComboBoxItem Content="🔔 All Flagged Threats" Tag="All" IsSelected="True" />
+                                        <ComboBoxItem Content="⚠️ Critical Threats Only" Tag="Critical" />
+                                        <ComboBoxItem Content="🔇 Silent (Audit Log Only)" Tag="Silent" />
+                                    </ComboBox>
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: 4-Layer Telemetry Silencer on Boot -->
+                                <DockPanel Margin="0,4,0,4">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="4-Layer OS &amp; Browser Telemetry Silencer" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Automatically verifies and enforces blackhole policies on Windows, Chrome, and Edge telemetry." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkTelemetrySilencerBoot" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 7: Software Updater & Maintenance -->
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="🔄" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Software Updater &amp; Audit Log Maintenance" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Setting: Winget Check on Startup -->
+                                <DockPanel Margin="0,4,0,8">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="520">
+                                        <TextBlock Text="Check for App Updates on Startup" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Scans installed programs via Windows Package Manager (Winget) on application launch." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="ChkWingetCheckStartup" Style="{StaticResource VortexToggleSwitch}" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnAppSettingChanged" />
+                                </DockPanel>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,6,0,8" />
+
+                                <!-- Setting: Audit Log Pruning -->
+                                <DockPanel Margin="0,4,0,4">
+                                    <StackPanel DockPanel.Dock="Left" MaxWidth="500">
+                                        <TextBlock Text="Database Audit Log Retention" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                        <TextBlock Text="Purge old audit logs from the SQLite database to preserve local disk storage." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <ComboBox x:Name="CmbAuditLogRetention" Width="130" Margin="0,0,8,0" SelectionChanged="OnAppSettingSelectionChanged">
+                                            <ComboBoxItem Content="30 Days" Tag="30" IsSelected="True" />
+                                            <ComboBoxItem Content="60 Days" Tag="60" />
+                                            <ComboBoxItem Content="90 Days" Tag="90" />
+                                        </ComboBox>
+                                        <Button Style="{StaticResource VortexSecondaryButton}" Content="🗑️ Prune Now" Click="OnPruneAuditLogsClick" Height="30" Padding="10,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 8: About & Authenticode Signature Info -->
+                        <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18,14">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Image Source="/vortex.png" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
+                                        <TextBlock Text="Vortex System Guardian v2.4.0" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                        <Border Background="#2010B981" CornerRadius="4" Padding="6,2" Margin="10,0,0,0">
+                                            <TextBlock Text="🛡️ AUTHENTICODE SIGNED" Foreground="{DynamicResource StatusSafeBrush}" FontWeight="Bold" FontSize="9" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="Publisher: CN=DAVE_HR, O=DAVE_HR • SHA-256 Authenticode Verified • Windows 10 &amp; 11 (64-bit)" 
+                                               FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="Engine: SQLite 3.49 WAL • AES-256-GCM / PBKDF2-HMAC-SHA256 • Per-Monitor v2 DPI Aware" 
+                                               FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
 
                 </Grid>
             </Border>

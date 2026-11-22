@@ -160,6 +160,44 @@
         </Setter>
     </Style>
 
+    <!-- Modern Fluent ToggleSwitch -->
+    <Style x:Key="VortexToggleSwitch" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid VerticalAlignment="Center">
+                        <Border x:Name="SwitchTrack" Width="40" Height="22" CornerRadius="11"
+                                Background="{DynamicResource SurfaceSubtleBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1.5">
+                            <Border x:Name="SwitchThumb" Width="14" Height="14" CornerRadius="7"
+                                    Background="{DynamicResource TextSecondaryBrush}"
+                                    HorizontalAlignment="Left" Margin="3,0,0,0" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="SwitchTrack" Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                            <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+                            <Setter TargetName="SwitchThumb" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="SwitchThumb" Property="Margin" Value="0,0,3,0" />
+                            <Setter TargetName="SwitchThumb" Property="Background" Value="#FFFFFF" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="{DynamicResource BorderHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="SwitchTrack" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Custom Fluent ProgressBar with Determinate & Indeterminate Support -->
     <Style TargetType="ProgressBar">
         <Setter Property="Height" Value="7" />

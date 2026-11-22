@@ -671,6 +671,114 @@ namespace Vortex.Core.Database
             catch { }
         }
         #endregion
+
+        #region General App Settings & Diagnostics
+        public string GetSetting(string key, string defaultValue = "")
+        {
+            try
+            {
+                using var conn = GetConnection();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT Value FROM Settings WHERE Key = @k";
+                cmd.Parameters.AddWithValue("@k", key);
+                var val = cmd.ExecuteScalar();
+                return val != null && val != DBNull.Value ? Convert.ToString(val) ?? defaultValue : defaultValue;
+            }
+            catch { return defaultValue; }
+        }
+
+        public void SetSetting(string key, string value)
+        {
+            try
+            {
+                using var conn = GetConnection();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "INSERT INTO Settings (Key, Value) VALUES (@k, @v) ON CONFLICT(Key) DO UPDATE SET Value = @v";
+                cmd.Parameters.AddWithValue("@k", key);
+                cmd.Parameters.AddWithValue("@v", value ?? string.Empty);
+                cmd.ExecuteNonQuery();
+            }
+            catch { }
+        }
+
+        public VortexAppSettingsModel GetAppSettings()
+        {
+            var model = new VortexAppSettingsModel
+            {
+                StartWithWindows = Vortex.Core.SystemIntegration.WindowsStartupHelper.IsRunOnStartupEnabled(),
+                StartMinimizedToTray = GetSetting("StartMinimizedToTray", "False").Equals("True", StringComparison.OrdinalIgnoreCase),
+                CloseToTray = GetSetting("CloseToTray", "True").Equals("True", StringComparison.OrdinalIgnoreCase),
+                LaunchOrbOnStartup = GetSetting("LaunchOrbOnStartup", "False").Equals("True", StringComparison.OrdinalIgnoreCase),
+                ThemeMode = GetSetting("ThemeMode", "Dark"),
+                BackdropEffect = GetSetting("BackdropEffect", "Acrylic"),
+                AutoTrimRam = GetSetting("AutoTrimRam", "False").Equals("True", StringComparison.OrdinalIgnoreCase),
+                AutoTrimThresholdPercent = int.TryParse(GetSetting("AutoTrimThresholdPercent", "85"), out int thresh) ? thresh : 85,
+                TelemetryPollingSeconds = int.TryParse(GetSetting("TelemetryPollingSeconds", "2"), out int poll) ? poll : 2,
+                ThermalAlertsEnabled = GetSetting("ThermalAlertsEnabled", "True").Equals("True", StringComparison.OrdinalIgnoreCase),
+                AutoCreateRestorePoint = GetSetting("AutoCreateRestorePoint", "True").Equals("True", StringComparison.OrdinalIgnoreCase),
+                QuarantineRetentionDays = int.TryParse(GetSetting("QuarantineRetentionDays", "14"), out int ret) ? ret : 14,
+                IntrusionNotificationLevel = GetSetting("IntrusionNotificationLevel", "All"),
+                TelemetrySilencerOnBoot = GetSetting("TelemetrySilencerOnBoot", "True").Equals("True", StringComparison.OrdinalIgnoreCase),
+                WingetCheckOnStartup = GetSetting("WingetCheckOnStartup", "True").Equals("True", StringComparison.OrdinalIgnoreCase),
+                AuditLogRetentionDays = int.TryParse(GetSetting("AuditLogRetentionDays", "30"), out int logRet) ? logRet : 30
+            };
+            return model;
+        }
+
+        public void SaveAppSettings(VortexAppSettingsModel settings)
+        {
+            try
+            {
+                Vortex.Core.SystemIntegration.WindowsStartupHelper.SetRunOnStartup(settings.StartWithWindows, settings.StartMinimizedToTray);
+                SetSetting("StartMinimizedToTray", settings.StartMinimizedToTray.ToString());
+                SetSetting("CloseToTray", settings.CloseToTray.ToString());
+                SetSetting("LaunchOrbOnStartup", settings.LaunchOrbOnStartup.ToString());
+                SetSetting("ThemeMode", settings.ThemeMode);
+                SetSetting("BackdropEffect", settings.BackdropEffect);
+                SetSetting("AutoTrimRam", settings.AutoTrimRam.ToString());
+                SetSetting("AutoTrimThresholdPercent", settings.AutoTrimThresholdPercent.ToString());
+                SetSetting("TelemetryPollingSeconds", settings.TelemetryPollingSeconds.ToString());
+                SetSetting("ThermalAlertsEnabled", settings.ThermalAlertsEnabled.ToString());
+                SetSetting("AutoCreateRestorePoint", settings.AutoCreateRestorePoint.ToString());
+                SetSetting("QuarantineRetentionDays", settings.QuarantineRetentionDays.ToString());
+                SetSetting("IntrusionNotificationLevel", settings.IntrusionNotificationLevel);
+                SetSetting("TelemetrySilencerOnBoot", settings.TelemetrySilencerOnBoot.ToString());
+                SetSetting("WingetCheckOnStartup", settings.WingetCheckOnStartup.ToString());
+                SetSetting("AuditLogRetentionDays", settings.AuditLogRetentionDays.ToString());
+            }
+            catch { }
+        }
+
+        public int PruneOldAuditLogs(int days)
+        {
+            try
+            {
+                using var conn = GetConnection();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "DELETE FROM AuditLog WHERE julianday('now') - julianday(Timestamp) > @d";
+                cmd.Parameters.AddWithValue("@d", days);
+                return cmd.ExecuteNonQuery();
+            }
+            catch { return 0; }
+        }
+
+        public bool FactoryReset()
+        {
+            try
+            {
+                using var conn = GetConnection();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    DELETE FROM Settings;
+                    DELETE FROM AuditLog;
+                    DELETE FROM QuarantineRegistry;
+                ";
+                cmd.ExecuteNonQuery();
+                return true;
+            }
+            catch { return false; }
+        }
+        #endregion
     }
 }
 

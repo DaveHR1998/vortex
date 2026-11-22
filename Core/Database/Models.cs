@@ -271,6 +271,39 @@ namespace Vortex.Core.Database
         public string StatusDisplay => IsWriteProtected ? "🔒 Read-Only (Write-Blocked)" : "🟢 Write-Allowed (Temporary)";
         public string StatusBadgeColor => IsWriteProtected ? "#8B5CF6" : "#10B981";
     }
+
+    public class VortexAppSettingsModel
+    {
+        // General & Startup
+        public bool StartWithWindows { get; set; } = false;
+        public bool StartMinimizedToTray { get; set; } = false;
+        public bool CloseToTray { get; set; } = true;
+        public bool LaunchOrbOnStartup { get; set; } = false;
+
+        // Appearance
+        public string ThemeMode { get; set; } = "Dark"; // "Dark", "Light", "System"
+        public string BackdropEffect { get; set; } = "Acrylic"; // "Acrylic", "Solid"
+
+        // Autonomous Performance & Heuristics
+        public bool AutoTrimRam { get; set; } = false;
+        public int AutoTrimThresholdPercent { get; set; } = 85;
+        public int TelemetryPollingSeconds { get; set; } = 2; // 1, 2, 5
+        public bool ThermalAlertsEnabled { get; set; } = true;
+
+        // System Sweeper & Safety
+        public bool AutoCreateRestorePoint { get; set; } = true;
+        public int QuarantineRetentionDays { get; set; } = 14; // 7, 14, 30
+
+        // Network & Threat Defense
+        public string IntrusionNotificationLevel { get; set; } = "All"; // "All", "Critical", "Silent"
+        public bool TelemetrySilencerOnBoot { get; set; } = true;
+
+        // Software Updater
+        public bool WingetCheckOnStartup { get; set; } = true;
+
+        // Maintenance
+        public int AuditLogRetentionDays { get; set; } = 30;
+    }
 }
 
 

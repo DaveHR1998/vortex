@@ -20,14 +20,14 @@
 
     <Border Margin="14"
             CornerRadius="16"
-            Background="{DynamicResource SurfaceDarkBrush}"
+            Background="{DynamicResource CanvasBgBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="26" Color="#000000" Opacity="0.65" ShadowDepth="6" />
         </Border.Effect>
 
-        <Grid>
+        <Grid Background="{DynamicResource SurfaceDarkBrush}">
             <!-- Top Subtle Atmospheric Gradient Glow -->
             <Border Height="80" VerticalAlignment="Top" CornerRadius="16,16,0,0" Opacity="0.4"
                     Background="{DynamicResource AtmosphericGradient}" IsHitTestVisible="False" />

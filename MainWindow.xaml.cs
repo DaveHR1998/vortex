@@ -828,14 +828,32 @@ namespace Vortex
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            e.Cancel = true;
-            Hide();
+            var settings = _db.GetAppSettings();
+            if (settings.CloseToTray)
+            {
+                e.Cancel = true;
+                Hide();
+            }
+            else
+            {
+                _trayService?.Dispose();
+                Application.Current.Shutdown();
+            }
         }
 
         private void OnCloseClick(object sender, RoutedEventArgs e)
         {
-            Hide();
-            _trayService?.ShowNotification("Vortex Active in Background", "Vortex is monitoring and keeping your memory clean. Click the tray icon to reopen.");
+            var settings = _db.GetAppSettings();
+            if (settings.CloseToTray)
+            {
+                Hide();
+                _trayService?.ShowNotification("Vortex Active in Background", "Vortex is monitoring and keeping your memory clean. Click the tray icon to reopen.");
+            }
+            else
+            {
+                _trayService?.Dispose();
+                Application.Current.Shutdown();
+            }
         }
 
         private void OnToggleOrbClick(object sender, RoutedEventArgs e)
@@ -888,6 +906,7 @@ namespace Vortex
             PanelVault.Visibility = NavVault.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             PanelUpdater.Visibility = NavUpdater.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             PanelSysInfo.Visibility = NavSysInfo.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            PanelSettings.Visibility = NavSettings.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
 
             // Stop sensor timer when not on System Info tab
             if (NavSysInfo.IsChecked != true && _sensorTimer != null)
@@ -991,6 +1010,11 @@ namespace Vortex
                 TxtBreadcrumb.Text = "System Information";
                 _ = LoadSystemInfoAsync();
                 StartSensorTimer();
+            }
+            else if (NavSettings.IsChecked == true)
+            {
+                TxtBreadcrumb.Text = "Settings & Preferences";
+                LoadSettingsView();
             }
         }
 
@@ -4267,6 +4291,336 @@ namespace Vortex
             {
                 var (success, msg) = ShellContextMenuService.UnregisterContextMenu();
                 TxtStatusBar.Text = msg;
+            }
+        }
+        #endregion
+
+        #region TAB 14: Settings & Preferences Hub
+        private bool _isSyncingAppSettings = false;
+
+        private void LoadSettingsView()
+        {
+            if (_db == null || PanelSettings == null) return;
+            _isSyncingAppSettings = true;
+
+            try
+            {
+                var s = _db.GetAppSettings();
+
+                // Card 1: Windows Boot & Tray
+                if (ChkStartWithWindows != null) ChkStartWithWindows.IsChecked = WindowsStartupHelper.IsRunOnStartupEnabled();
+                if (ChkStartMinimized != null) ChkStartMinimized.IsChecked = s.StartMinimizedToTray;
+                if (ChkCloseToTray != null) ChkCloseToTray.IsChecked = s.CloseToTray;
+                if (ChkLaunchOrbOnStartup != null) ChkLaunchOrbOnStartup.IsChecked = s.LaunchOrbOnStartup;
+
+                // Card 2: Appearance & Personalization
+                if (CmbThemeMode != null) SelectComboTag(CmbThemeMode, s.ThemeMode);
+                if (CmbBackdropEffect != null) SelectComboTag(CmbBackdropEffect, s.BackdropEffect);
+
+                // Card 3: Autonomous Performance & Hardware Heuristics
+                if (ChkAutoTrimRam != null) ChkAutoTrimRam.IsChecked = s.AutoTrimRam;
+                if (CmbAutoTrimThreshold != null) SelectComboTag(CmbAutoTrimThreshold, s.AutoTrimThresholdPercent.ToString());
+                if (CmbTelemetryPolling != null) SelectComboTag(CmbTelemetryPolling, s.TelemetryPollingSeconds.ToString());
+                if (ChkThermalAlerts != null) ChkThermalAlerts.IsChecked = s.ThermalAlertsEnabled;
+
+                // Card 4: Vault & DLP Policies
+                if (_folderLockService != null)
+                {
+                    var vs = _folderLockService.GetSettings();
+                    if (ChkSettingsVaultScreenLock != null) ChkSettingsVaultScreenLock.IsChecked = vs.AutoLockOnScreenLock;
+                    if (CmbSettingsVaultIdle != null) SelectComboTag(CmbSettingsVaultIdle, vs.AutoLockIdleMinutes.ToString());
+                    if (ChkSettingsVaultContextMenu != null) ChkSettingsVaultContextMenu.IsChecked = ShellContextMenuService.IsContextMenuRegistered();
+                }
+                if (ChkSettingsUsbDlp != null)
+                {
+                    ChkSettingsUsbDlp.IsChecked = _usbDlp?.IsUsbWriteProtectActive() ?? false;
+                }
+
+                // Card 5: Sweeper & Recovery Safeguards
+                if (ChkAutoRestorePoint != null) ChkAutoRestorePoint.IsChecked = s.AutoCreateRestorePoint;
+                if (CmbQuarantineRetention != null) SelectComboTag(CmbQuarantineRetention, s.QuarantineRetentionDays.ToString());
+
+                // Card 6: Network & Telemetry Silencer
+                if (CmbIntrusionNotification != null) SelectComboTag(CmbIntrusionNotification, s.IntrusionNotificationLevel);
+                if (ChkTelemetrySilencerBoot != null) ChkTelemetrySilencerBoot.IsChecked = s.TelemetrySilencerOnBoot;
+
+                // Card 7: Updater & Maintenance
+                if (ChkWingetCheckStartup != null) ChkWingetCheckStartup.IsChecked = s.WingetCheckOnStartup;
+                if (CmbAuditLogRetention != null) SelectComboTag(CmbAuditLogRetention, s.AuditLogRetentionDays.ToString());
+            }
+            catch (Exception ex)
+            {
+                TxtStatusBar.Text = $"Failed to load settings: {ex.Message}";
+            }
+            finally
+            {
+                _isSyncingAppSettings = false;
+            }
+        }
+
+        private void OnAppSettingChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isSyncingAppSettings || _db == null) return;
+
+            try
+            {
+                var s = _db.GetAppSettings();
+
+                // Windows Startup
+                if (sender == ChkStartWithWindows && ChkStartWithWindows != null)
+                {
+                    bool enable = ChkStartWithWindows.IsChecked == true;
+                    WindowsStartupHelper.SetRunOnStartup(enable);
+                    s.StartWithWindows = enable;
+                    TxtStatusBar.Text = enable ? "Vortex configured to start with Windows." : "Vortex removed from Windows startup.";
+                }
+                else
+                {
+                    if (ChkStartWithWindows != null) s.StartWithWindows = ChkStartWithWindows.IsChecked == true;
+                }
+
+                if (ChkStartMinimized != null) s.StartMinimizedToTray = ChkStartMinimized.IsChecked == true;
+                if (ChkCloseToTray != null) s.CloseToTray = ChkCloseToTray.IsChecked == true;
+                if (ChkLaunchOrbOnStartup != null) s.LaunchOrbOnStartup = ChkLaunchOrbOnStartup.IsChecked == true;
+
+                if (ChkAutoTrimRam != null) s.AutoTrimRam = ChkAutoTrimRam.IsChecked == true;
+                if (ChkThermalAlerts != null) s.ThermalAlertsEnabled = ChkThermalAlerts.IsChecked == true;
+
+                if (ChkAutoRestorePoint != null) s.AutoCreateRestorePoint = ChkAutoRestorePoint.IsChecked == true;
+                if (ChkTelemetrySilencerBoot != null) s.TelemetrySilencerOnBoot = ChkTelemetrySilencerBoot.IsChecked == true;
+                if (ChkWingetCheckStartup != null) s.WingetCheckOnStartup = ChkWingetCheckStartup.IsChecked == true;
+
+                _db.SaveAppSettings(s);
+            }
+            catch (Exception ex)
+            {
+                TxtStatusBar.Text = $"Error saving setting: {ex.Message}";
+            }
+        }
+
+        private void OnAppSettingSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isSyncingAppSettings || _db == null) return;
+
+            try
+            {
+                var s = _db.GetAppSettings();
+
+                if (CmbAutoTrimThreshold?.SelectedItem is ComboBoxItem itemTrim && int.TryParse(itemTrim.Tag?.ToString(), out int trimPct))
+                {
+                    s.AutoTrimThresholdPercent = trimPct;
+                }
+
+                if (CmbTelemetryPolling?.SelectedItem is ComboBoxItem itemPoll && int.TryParse(itemPoll.Tag?.ToString(), out int pollSec))
+                {
+                    s.TelemetryPollingSeconds = pollSec;
+                    if (_telemetryTimer != null)
+                    {
+                        _telemetryTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, pollSec));
+                    }
+                }
+
+                if (CmbQuarantineRetention?.SelectedItem is ComboBoxItem itemQuar && int.TryParse(itemQuar.Tag?.ToString(), out int quarDays))
+                {
+                    s.QuarantineRetentionDays = quarDays;
+                }
+
+                if (CmbIntrusionNotification?.SelectedItem is ComboBoxItem itemNotif && itemNotif.Tag?.ToString() is string notifLevel)
+                {
+                    s.IntrusionNotificationLevel = notifLevel;
+                }
+
+                if (CmbAuditLogRetention?.SelectedItem is ComboBoxItem itemAudit && int.TryParse(itemAudit.Tag?.ToString(), out int auditDays))
+                {
+                    s.AuditLogRetentionDays = auditDays;
+                }
+
+                _db.SaveAppSettings(s);
+            }
+            catch (Exception ex)
+            {
+                TxtStatusBar.Text = $"Error updating preferences: {ex.Message}";
+            }
+        }
+
+        private void OnThemeModeSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isSyncingAppSettings || _db == null || _themeService == null) return;
+            if (CmbThemeMode?.SelectedItem is ComboBoxItem item && item.Tag?.ToString() is string mode)
+            {
+                bool isDark = mode.Equals("Dark", StringComparison.OrdinalIgnoreCase);
+                _themeService.SetTheme(isDark);
+                var s = _db.GetAppSettings();
+                s.ThemeMode = mode;
+                _db.SaveAppSettings(s);
+                TxtStatusBar.Text = $"Theme updated to {(isDark ? "Deep Space Dark" : "Fluent Polar Light")}.";
+            }
+        }
+
+        private void OnBackdropSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isSyncingAppSettings || _db == null) return;
+            if (CmbBackdropEffect?.SelectedItem is ComboBoxItem item && item.Tag?.ToString() is string backdrop)
+            {
+                var s = _db.GetAppSettings();
+                s.BackdropEffect = backdrop;
+                _db.SaveAppSettings(s);
+                TxtStatusBar.Text = $"Window backdrop set to {backdrop}.";
+            }
+        }
+
+        private void OnSettingsVaultScreenLockChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isSyncingAppSettings || _folderLockService == null || ChkSettingsVaultScreenLock == null) return;
+            var vs = _folderLockService.GetSettings();
+            vs.AutoLockOnScreenLock = ChkSettingsVaultScreenLock.IsChecked == true;
+            _folderLockService.SaveSettings(vs);
+            if (ChkVaultLockOnScreenLock != null) ChkVaultLockOnScreenLock.IsChecked = vs.AutoLockOnScreenLock;
+            TxtStatusBar.Text = vs.AutoLockOnScreenLock ? "Vault auto-lock on Win+L enabled." : "Vault auto-lock on Win+L disabled.";
+        }
+
+        private void OnSettingsVaultIdleChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isSyncingAppSettings || _folderLockService == null || CmbSettingsVaultIdle == null) return;
+            if (CmbSettingsVaultIdle.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out int mins))
+            {
+                var vs = _folderLockService.GetSettings();
+                vs.AutoLockIdleMinutes = mins;
+                _folderLockService.SaveSettings(vs);
+                if (CmbVaultIdleMinutes != null) SelectComboTag(CmbVaultIdleMinutes, mins.ToString());
+                TxtStatusBar.Text = mins > 0 ? $"Vault inactivity auto-lock set to {mins} minutes." : "Vault inactivity auto-lock disabled.";
+            }
+        }
+
+        private void OnSettingsVaultContextMenuChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isSyncingAppSettings || ChkSettingsVaultContextMenu == null) return;
+            bool enable = ChkSettingsVaultContextMenu.IsChecked == true;
+            if (enable)
+            {
+                var (success, msg) = ShellContextMenuService.RegisterContextMenu();
+                TxtStatusBar.Text = msg;
+            }
+            else
+            {
+                var (success, msg) = ShellContextMenuService.UnregisterContextMenu();
+                TxtStatusBar.Text = msg;
+            }
+            if (ChkVaultContextMenu != null) ChkVaultContextMenu.IsChecked = enable;
+        }
+
+        private void OnChangeMasterPasswordClick(object sender, RoutedEventArgs e)
+        {
+            OnChangeVaultPasswordClick(sender, e);
+        }
+
+        private void OnSettingsUsbDlpChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isSyncingAppSettings || _usbDlp == null || ChkSettingsUsbDlp == null) return;
+            bool enable = ChkSettingsUsbDlp.IsChecked == true;
+            var (success, msg) = _usbDlp.SetUsbWriteBlockEnabled(enable);
+            TxtStatusBar.Text = msg;
+            RefreshVaultView();
+        }
+
+        private void OnPruneAuditLogsClick(object sender, RoutedEventArgs e)
+        {
+            if (_db == null) return;
+            int days = 30;
+            if (CmbAuditLogRetention?.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out int d))
+            {
+                days = d;
+            }
+
+            int purged = _db.PruneOldAuditLogs(days);
+            VortexDialogWindow.ShowSuccess(this, "Audit Database Compacted", $"{purged} Records", "Audit Records Purged",
+                $"Successfully purged {purged} audit log records older than {days} days. SQLite database storage has been vacuumed and reclaimed.");
+            TxtStatusBar.Text = $"Purged {purged} old audit records.";
+            RefreshHistoryLogs();
+        }
+
+        private void OnExportDiagnosticsClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                string fileName = $"Vortex_Diagnostics_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                string fullPath = Path.Combine(desktopPath, fileName);
+
+                var s = _db.GetAppSettings();
+                var vs = _folderLockService?.GetSettings();
+                var hw = _hardwareMonitor;
+
+                var diag = new
+                {
+                    Application = "Vortex Guardian & System Engine",
+                    Version = "2.4.0",
+                    ExportTimestampUtc = DateTime.UtcNow,
+                    MachineName = Environment.MachineName,
+                    OSVersion = Environment.OSVersion.VersionString,
+                    ProcessorCount = Environment.ProcessorCount,
+                    Is64BitOperatingSystem = Environment.Is64BitOperatingSystem,
+                    Settings = s,
+                    VaultSettings = vs,
+                    Hardware = new
+                    {
+                        CpuUsagePercentage = hw?.GetCpuUsagePercentage(),
+                        Memory = _memOptimizer?.GetMemoryStatus(),
+                        DiskC = hw?.GetDriveStorage("C")
+                    },
+                    ActiveProtection = new
+                    {
+                        IsRunOnStartup = WindowsStartupHelper.IsRunOnStartupEnabled(),
+                        IsContextMenuRegistered = ShellContextMenuService.IsContextMenuRegistered(),
+                        IsUsbDlpActive = _usbDlp?.IsUsbWriteProtectActive() ?? false,
+                        ActiveVaultCount = _folderLockService?.GetAllVaultFolders().Count ?? 0
+                    }
+                };
+
+                string json = System.Text.Json.JsonSerializer.Serialize(diag, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(fullPath, json);
+
+                VortexDialogWindow.ShowSuccess(this, "Diagnostics Exported", "Export Complete", "Desktop File Created",
+                    $"Comprehensive system diagnostic state successfully written to:\n\n{fileName}");
+                TxtStatusBar.Text = $"Diagnostics exported to desktop: {fileName}";
+            }
+            catch (Exception ex)
+            {
+                VortexDialogWindow.ShowWarning(this, "Export Failed", $"Unable to export diagnostics: {ex.Message}");
+            }
+        }
+
+        private void OnFactoryResetClick(object sender, RoutedEventArgs e)
+        {
+            bool proceed = VortexDialogWindow.ShowConfirm(this, "Reset to Factory Settings",
+                "Are you sure you want to restore all Vortex configuration, thresholds, and boot policies back to default settings?\n\nThis will not delete your encrypted vaults or system restore points.", "Reset All");
+            if (!proceed) return;
+
+            try
+            {
+                _db.FactoryReset();
+                WindowsStartupHelper.SetRunOnStartup(false);
+                LoadSettingsView();
+                VortexDialogWindow.ShowSuccess(this, "Factory Reset Complete", "Defaults Restored", "All Settings Reset",
+                    "All Vortex settings, hardware polling intervals, and notification preferences have been safely reset to factory defaults.");
+                TxtStatusBar.Text = "Vortex settings successfully reset to factory defaults.";
+            }
+            catch (Exception ex)
+            {
+                VortexDialogWindow.ShowWarning(this, "Reset Error", $"Failed to reset settings: {ex.Message}");
+            }
+        }
+
+        private static void SelectComboTag(ComboBox cmb, string? tagValue)
+        {
+            if (cmb == null || tagValue == null) return;
+            foreach (var item in cmb.Items)
+            {
+                if (item is ComboBoxItem cbi && string.Equals(cbi.Tag?.ToString(), tagValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    cmb.SelectedItem = cbi;
+                    return;
+                }
             }
         }
         #endregion
