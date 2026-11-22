@@ -83,6 +83,7 @@ namespace Vortex
         {
             InitializeComponent();
             LoadWindowIconSafely();
+            AdaptWindowToScreen();
 
             _db = new DatabaseService();
             _blockService = new ProcessBlockService(_db);
@@ -375,6 +376,22 @@ namespace Vortex
                 {
                     var iconUri = new Uri("pack://application:,,,/vortex.png");
                     Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
+                }
+            }
+            catch { }
+        }
+
+        private void AdaptWindowToScreen()
+        {
+            try
+            {
+                var workArea = SystemParameters.WorkArea;
+                if (workArea.Width > 0 && workArea.Height > 0)
+                {
+                    Width = Math.Min(1160, Math.Max(880, workArea.Width * 0.90));
+                    Height = Math.Min(700, Math.Max(520, workArea.Height * 0.88));
+                    Left = (workArea.Width - Width) / 2 + workArea.Left;
+                    Top = (workArea.Height - Height) / 2 + workArea.Top;
                 }
             }
             catch { }
