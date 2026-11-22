@@ -229,5 +229,6 @@ This executes the 6-stage build pipeline:
 
 ---
 
-## 📄 License
-This project is licensed under the GNU General Public License v3.0 (GPLv3) — see the [LICENSE](LICENSE) file for details.
+## 📄 License & Legal Notices
+* **Application License**: This project is licensed under the GNU General Public License v3.0 (GPLv3) — see the [LICENSE](LICENSE) file for details.
+* **Third-Party Open-Source Credits**: Bundled open-source libraries, runtime components, and copyright acknowledgments are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
