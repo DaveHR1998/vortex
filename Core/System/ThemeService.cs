@@ -22,26 +22,26 @@ namespace Vortex.Core.SystemIntegration
 
             if (darkMode)
             {
-                // Vortex Lighter Cosmic Violet & Azure Aurora + Translucent Frosted Glass
-                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0x0F, 0x14, 0x24));
+                // Proton-Style High Dynamic Range Aurora Spotlight into Deep Obsidian Void
+                res["CanvasBgBrush"] = new SolidColorBrush(Color.FromRgb(0x06, 0x09, 0x10));
                 
                 var darkAtmosphere = new LinearGradientBrush
                 {
-                    StartPoint = new Point(0.5, 0),
-                    EndPoint = new Point(0.5, 1)
+                    StartPoint = new Point(0.38, 0),
+                    EndPoint = new Point(0.62, 1)
                 };
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x26, 0x1B, 0x46), 0.0));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x18, 0x26, 0x4D), 0.30));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x12, 0x18, 0x2E), 0.70));
-                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x0F, 0x14, 0x24), 1.0));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x2C, 0x12, 0x50), 0.0));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x12, 0x2A, 0x50), 0.20));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x0B, 0x15, 0x2A), 0.52));
+                darkAtmosphere.GradientStops.Add(new GradientStop(Color.FromArgb(0xFF, 0x06, 0x09, 0x10), 1.0));
                 res["AtmosphericGradient"] = darkAtmosphere;
 
-                // Translucent floating glass cards
-                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0x40, 0x12, 0x1A, 0x30));
-                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0x50, 0x19, 0x23, 0x40));
-                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0x28, 0x12, 0x1A, 0x30));
-                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0x40, 0x45, 0x5C, 0xA0));
-                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x80, 0x5E, 0x7B, 0xD0));
+                // Deep Obsidian Slate Cards with Crisp High Contrast
+                res["SurfaceDarkBrush"] = new SolidColorBrush(Color.FromArgb(0xEE, 0x0C, 0x11, 0x1C));
+                res["SurfaceRaisedBrush"] = new SolidColorBrush(Color.FromArgb(0xF4, 0x12, 0x19, 0x29));
+                res["SurfaceSubtleBrush"] = new SolidColorBrush(Color.FromArgb(0xC0, 0x0E, 0x14, 0x22));
+                res["BorderBrush"] = new SolidColorBrush(Color.FromArgb(0x30, 0x45, 0x60, 0xA0));
+                res["BorderHoverBrush"] = new SolidColorBrush(Color.FromArgb(0x70, 0x5A, 0x7C, 0xE0));
 
                 res["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(0xF8, 0xFA, 0xFD));
                 res["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xC0));
