@@ -148,6 +148,7 @@ Sign-Binary $distInstaller $codeSignCert
 if (-not $KeepStaging) {
     Remove-Item $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item $packageZip -Force -ErrorAction SilentlyContinue
+    Remove-Item $finalInstaller -Force -ErrorAction SilentlyContinue
 }
 
 $sig = Get-AuthenticodeSignature $distInstaller
