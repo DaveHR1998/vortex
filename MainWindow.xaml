@@ -354,74 +354,38 @@
                             </Grid>
                         </Border>
 
-                        <!-- Fast Action Feature Cards Grid (Unified Cohesive Icons) -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Card 1: Memory & Processes -->
-                            <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,6,0" Cursor="Hand" MouseLeftButtonUp="OnCardProcessesClick">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
-                                            <TextBlock Text="⚡" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <!-- 2. High-Priority Software Updates Intelligence Alert -->
+                        <Border x:Name="BorderOverviewUpdateAlert" CornerRadius="10" Padding="14,10" Margin="0,0,0,10"
+                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1.2">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource VortexPrimaryButton}"
+                                        x:Name="BtnOverviewUpdateAction" Content="Update All Now →"
+                                        Padding="12,5" FontSize="11" Click="OnOverviewUpdateAllClick"
+                                        VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                        <Border x:Name="BadgeOverviewUpdate" Background="{DynamicResource AccentSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                            <TextBlock x:Name="TxtOverviewUpdateBadge" Text="⚡ CHECKING UPDATES..." Foreground="#000000" FontWeight="Bold" FontSize="9" />
                                         </Border>
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="Process Intelligence" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" />
-                                            <TextBlock x:Name="TxtCardProcessesSub" Text="Active Tasks &amp; RAM" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" />
-                                        </StackPanel>
+                                        <TextBlock x:Name="TxtOverviewUpdateHeader" Text="Software &amp; Application Intelligence" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                                     </StackPanel>
-                                    <TextBlock Text="Identify memory hogs, dev daemons, and trim working sets safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="TxtOverviewUpdateAppNames" Text="Querying Winget catalog for package upgrades..." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
-                            </Border>
+                            </DockPanel>
+                        </Border>
 
-                            <!-- Card 2: Folder Provenance -->
-                            <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="3,0,3,0" Cursor="Hand" MouseLeftButtonUp="OnCardStorageClick">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
-                                            <TextBlock Text="📁" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="Folder Ownership" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" />
-                                            <TextBlock x:Name="TxtCardStorageSub" Text="Drive C: Capacity" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" />
-                                        </StackPanel>
-                                    </StackPanel>
-                                    <TextBlock Text="Correlate mystery AppData folders to their installed apps and publishers." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Card 3: Safe Sweeper -->
-                            <Border Grid.Column="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="6,0,0,0" Cursor="Hand" MouseLeftButtonUp="OnCardJunkClick">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                        <Border Width="30" Height="30" CornerRadius="6" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,10,0">
-                                            <TextBlock Text="🧹" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="System Sweeper" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" />
-                                            <TextBlock x:Name="TxtCardJunkSub" Text="Restore Point Protected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="9.5" />
-                                        </StackPanel>
-                                    </StackPanel>
-                                    <TextBlock Text="Clean Windows temp, browser caches, and prefetch safely." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-
-                        <!-- Quick Telemetry & Health Panel -->
-                        <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16">
+                        <!-- 3. Live Hardware Telemetry & Utilization Hub -->
+                        <Border Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16,14" Margin="0,0,0,10">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="1.1*" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Live Resource Telemetry & Utilization -->
+                                <!-- Column 0: Real-time CPU, RAM & Disk Telemetry -->
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="LIVE RESOURCE TELEMETRY &amp; UTILIZATION" Foreground="{DynamicResource TextMutedBrush}" FontSize="9.5" FontWeight="Bold" Margin="0,0,0,10" />
+                                    <TextBlock Text="LIVE HARDWARE UTILIZATION &amp; TELEMETRY" Foreground="{DynamicResource TextMutedBrush}" FontSize="9.5" FontWeight="Bold" Margin="0,0,0,10" />
 
                                     <!-- CPU Activity -->
                                     <Grid Margin="0,0,0,6">
@@ -441,7 +405,10 @@
                                         </StackPanel>
                                         <TextBlock x:Name="TxtOverviewRamLoad" Text="48% (7.6 / 16 GB)" Foreground="{DynamicResource AccentGlowBrush}" FontWeight="Bold" HorizontalAlignment="Right" FontSize="11" />
                                     </Grid>
-                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="7" Background="#393A56" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,10" />
+                                    <ProgressBar x:Name="PbOverviewRam" Value="48" Maximum="100" Height="7" Background="#393A56" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,4" />
+
+                                    <!-- Top Consumer Pill / Actionable Process Insight -->
+                                    <TextBlock x:Name="TxtOverviewTopProcess" Text="🔥 Top Consumer: Calculating active memory hogs..." Foreground="{DynamicResource AccentSecondaryBrush}" FontSize="10" Margin="0,0,0,10" />
 
                                     <!-- Primary Drive (C:) -->
                                     <Grid Margin="0,0,0,6">
@@ -464,9 +431,9 @@
                                     </Grid>
                                 </StackPanel>
 
-                                <!-- Active Protection & Readiness Matrix -->
+                                <!-- Column 1: Active Protection & Readiness Matrix -->
                                 <StackPanel Grid.Column="1" Margin="16,0,0,0">
-                                    <TextBlock Text="ACTIVE PROTECTION &amp; SECURITY MATRIX" Foreground="{DynamicResource TextMutedBrush}" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />
+                                    <TextBlock Text="ACTIVE PROTECTION &amp; SECURITY MATRIX" Foreground="{DynamicResource TextMutedBrush}" FontSize="9.5" FontWeight="Bold" Margin="0,0,0,10" />
 
                                     <!-- Item 1: System32 Guard -->
                                     <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
@@ -512,6 +479,87 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
+
+                        <!-- 4. Executive Functionality Reports Grid (Live Engine Status) -->
+                        <TextBlock Text="EXECUTIVE SYSTEM REPORTS &amp; ENGINE POSTURE" Foreground="{DynamicResource TextMutedBrush}" FontSize="9.5" FontWeight="Bold" Margin="0,4,0,8" />
+                        <Grid Margin="0,0,0,10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Card 1: System Sweeper & Cleanable Storage -->
+                            <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,5,8" Cursor="Hand" MouseLeftButtonUp="OnCardJunkClick">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="36" Height="36" CornerRadius="8" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="🧹" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <DockPanel Margin="0,0,0,2">
+                                            <TextBlock Text="System Sweeper &amp; Storage" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                            <TextBlock Text="Clean Now →" Foreground="{DynamicResource AccentGlowBrush}" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="TxtCardJunkSub" Text="Restore Point Protected • Deep Cache Engine" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
+                                        <TextBlock x:Name="TxtCardStorageSub" Text="Scanning temporary caches and orphaned folders..." Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Card 2: Process & Resource Intelligence -->
+                            <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="5,0,0,8" Cursor="Hand" MouseLeftButtonUp="OnCardProcessesClick">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="36" Height="36" CornerRadius="8" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="⚡" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <DockPanel Margin="0,0,0,2">
+                                            <TextBlock Text="Process Intelligence" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                            <TextBlock Text="Optimize RAM →" Foreground="{DynamicResource AccentGlowBrush}" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="TxtCardProcessesSub" Text="Active Tasks &amp; RAM Optimization" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
+                                        <TextBlock x:Name="TxtOverviewProcDetail" Text="Working set compression and daemon suspension ready." Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Card 3: Zero-Trust Vault & USB DLP -->
+                            <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,5,0" Cursor="Hand" MouseLeftButtonUp="OnCardVaultClick">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="36" Height="36" CornerRadius="8" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="🔒" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <DockPanel Margin="0,0,0,2">
+                                            <TextBlock Text="Data Shield &amp; File Vault" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                            <TextBlock Text="Manage Vault →" Foreground="{DynamicResource AccentGlowBrush}" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="TxtOverviewVaultReport" Text="AES-256-GCM Military Encryption Armed" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
+                                        <TextBlock x:Name="TxtOverviewDlpReport" Text="USB DLP: Removable media write-protection ready." Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Card 4: Privacy & Threat Defense -->
+                            <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="5,0,0,0" Cursor="Hand" MouseLeftButtonUp="OnCardPrivacyClick">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Left" Width="36" Height="36" CornerRadius="8" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="🛡️" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <DockPanel Margin="0,0,0,2">
+                                            <TextBlock Text="Privacy &amp; Threat Defense" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                                            <TextBlock Text="Inspect Security →" Foreground="{DynamicResource AccentGlowBrush}" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="TxtOverviewPrivacyReport" Text="Zero OS Telemetry • 4-Layer Lockdown Enforced" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10.5" />
+                                        <TextBlock x:Name="TxtOverviewNetReport" Text="Network intrusion shield and firewall rules active." Foreground="{DynamicResource TextMutedBrush}" FontSize="10" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
                     </StackPanel>
                 </ScrollViewer>
 
