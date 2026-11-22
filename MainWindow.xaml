@@ -21,8 +21,6 @@
             <RowDefinition Height="42" />
             <!-- Main Content Area -->
             <RowDefinition Height="*" />
-            <!-- Slim Bottom Status Bar -->
-            <RowDefinition Height="28" />
         </Grid.RowDefinitions>
 
         <!-- 1. Integrated Title Bar (Proton Seamless Atmospheric Flow) -->
@@ -94,8 +92,8 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Frosted Floating Sidebar (Proton Style) -->
-            <Border Grid.Column="0" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Margin="14,4,6,10">
+            <!-- Frosted Floating Sidebar (Proton Style - Level 1 Glass) -->
+            <Border Grid.Column="0" Background="{DynamicResource SidebarGlassBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Margin="14,4,6,14">
                 <DockPanel Margin="2">
                     <!-- Search Box at Top of Sidebar (Spotlight Quick Launcher) -->
                     <Border DockPanel.Dock="Top" Margin="12,12,12,8">
@@ -297,8 +295,8 @@
                 </DockPanel>
             </Border>
 
-            <!-- Floating Dynamic Content Card (Proton Inset Island) -->
-            <Border Grid.Column="1" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Margin="6,4,14,10" ClipToBounds="True">
+            <!-- Floating Dynamic Content Card (Proton Inset Island - Level 1 Glass) -->
+            <Border Grid.Column="1" Background="{DynamicResource MainAreaGlassBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Margin="6,4,14,14" ClipToBounds="True">
                 <Grid Margin="18,16,18,16">
 
                 <!-- TAB 0: Hero Overview Dashboard -->
@@ -2529,11 +2527,7 @@
             </Border>
         </Grid>
 
-        <!-- 3. Floating Bottom Status Bar (Proton Clean Status Pill) -->
-        <Border Grid.Row="2" Background="{DynamicResource SurfaceDarkBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Margin="14,0,14,8" Padding="16,4">
-            <DockPanel VerticalAlignment="Center">
-                <TextBlock x:Name="TxtStatusBar" Text="Vortex Fluent Engine Ready • Administrator Elevated" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
-            </DockPanel>
-        </Border>
+        <!-- Hidden Status Field (Preserves Code-Behind Compatibility with Zero Visual Footprint) -->
+        <TextBlock x:Name="TxtStatusBar" Visibility="Collapsed" />
     </Grid>
 </Window>
